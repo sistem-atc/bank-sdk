@@ -105,6 +105,10 @@ return [
                 'production' => env('ITAU_HOST_BOLETOS_EXTRATO', 'https://boleto.api.itau.com'),
                 'sandbox' => env('ITAU_HOST_BOLETOS_EXTRATO_SANDBOX', 'https://api.itau.com.br/sandbox'),
             ],
+            'boletos_v3' => [ // Boletos v3 — webhook de notificações (notificacoes_boletos)
+                'production' => env('ITAU_HOST_BOLETOS_V3', 'https://boletos.cloud.itau.com.br'),
+                'sandbox' => env('ITAU_HOST_BOLETOS_V3_SANDBOX', 'https://devportal.itau.com.br/sandboxapi/itau-ep9-gtw-boletos-boletos-v3-ext-aws'),
+            ],
             'pix_recebimentos' => [ // Recebimentos Pix (regulatório Bacen) + Bolecode
                 'production' => env('ITAU_HOST_PIX_RECEB', 'https://pix-pj.api.itau.com'),
                 'sandbox' => env('ITAU_HOST_PIX_RECEB_SANDBOX', 'https://api.itau.com.br/sandbox'),

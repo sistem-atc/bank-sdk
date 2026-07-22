@@ -40,6 +40,15 @@ final class Boletos
         return new BoletosExtratoMethods($this->client('boletos_extrato'), $this->integration);
     }
 
+    /**
+     * Webhook de boletos (API v3, host próprio): notificação em tempo real de
+     * pagamento (baixa operacional) e liquidação (baixa efetiva).
+     */
+    public function notificacoes(): BoletosNotificacaoMethods
+    {
+        return new BoletosNotificacaoMethods($this->client('boletos_v3'), $this->integration);
+    }
+
     private function client(string $product): \Illuminate\Http\Client\PendingRequest
     {
         return HttpClientFactory::make($this->integration, ItauHosts::resolve($product, $this->integration));
