@@ -7,6 +7,7 @@ namespace SistemAtc\Banks\Itau\Bases;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use SistemAtc\Banks\Itau\Support\HttpClientFactory;
 use SistemAtc\Banks\Common\Enums\HttpMethod;
 use SistemAtc\Banks\Contracts\BankIntegration;
@@ -73,7 +74,12 @@ abstract class BaseMethods
      */
     protected function executeRequest(HttpMethod $method, string $apiPath, array $query, array $body): Response
     {
-        $client = $this->httpClient;
+        // x-itau-correlationID é único por request (rastreio da execução ponta a
+        // ponta nas camadas do Itaú). Gerado aqui, não no factory (que é por
+        // integração), pra que cada chamada tenha o seu.
+        $client = $this->httpClient->withHeaders([
+            'x-itau-correlationID' => (string) Str::uuid(),
+        ]);
 
         return match ($method) {
             HttpMethod::GET => $client->get($apiPath, $query),

@@ -40,7 +40,7 @@ it('autentica no Bradesco via client_credentials e devolve AuthToken', function 
 
 it('autentica no Itau usando o host STS separado (nao a base_url da API)', function () {
     Http::fake([
-        '*sandbox.devportal.itau.com.br/api/oauth/token' => Http::response([
+        '*api.itau.com.br/sandbox/api/oauth/token' => Http::response([
             'access_token' => 'TOKEN_ITAU',
             'expires_in' => 300,
         ]),
@@ -50,7 +50,7 @@ it('autentica no Itau usando o host STS separado (nao a base_url da API)', funct
 
     expect($token->accessToken)->toBe('TOKEN_ITAU');
 
-    Http::assertSent(fn ($r) => str_contains($r->url(), 'itau.com.br/api/oauth/token')
+    Http::assertSent(fn ($r) => str_contains($r->url(), 'itau.com.br/sandbox/api/oauth/token')
         && $r['client_id'] === 'cli'
         && $r['client_secret'] === 'sec');
 });

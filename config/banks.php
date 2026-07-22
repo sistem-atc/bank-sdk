@@ -43,16 +43,21 @@ return [
     ],
 
     'itau' => [
-        // OAuth2: Itaú usa client_credentials + mTLS. O token vem de um host de
-        // STS separado da API de negócio.
+        // OAuth2 client_credentials + mTLS. O token vem de um host STS separado
+        // da API de negócio. base_url é só o HOST — cada API prefixa seu path
+        // (ex.: SISPAG usa /sispag/v1/...); em sandbox o host já embute /sandbox.
         'base_url' => [
             'production' => env('ITAU_BASE_URL', 'https://api.itau.com.br'),
-            'sandbox' => env('ITAU_BASE_URL_SANDBOX', 'https://sandbox.devportal.itau.com.br'),
+            'sandbox' => env('ITAU_BASE_URL_SANDBOX', 'https://api.itau.com.br/sandbox'),
         ],
         'oauth_url' => [
             'production' => env('ITAU_OAUTH_URL', 'https://sts.itau.com.br/api/oauth/token'),
-            'sandbox' => env('ITAU_OAUTH_URL_SANDBOX', 'https://sandbox.devportal.itau.com.br/api/oauth/token'),
+            'sandbox' => env('ITAU_OAUTH_URL_SANDBOX', 'https://api.itau.com.br/sandbox/api/oauth/token'),
         ],
+        // Método de autenticação do cliente OAuth: 'client_secret' (default, do
+        // fluxo do certificado dinâmico) ou 'private_key_jwt' (client_assertion
+        // RS256). Pode ser sobrescrito por integração em settings['auth_method'].
+        'auth_method' => env('ITAU_AUTH_METHOD', 'client_secret'),
         'token_safety_margin' => (int) env('ITAU_TOKEN_MARGIN', 60),
     ],
 

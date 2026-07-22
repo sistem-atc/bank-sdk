@@ -10,6 +10,7 @@ use SistemAtc\Banks\Contracts\BankIntegration;
 use SistemAtc\Banks\Exceptions\BankAuthenticationException;
 use SistemAtc\Banks\Support\AuthToken;
 use SistemAtc\Banks\Support\MtlsOptions;
+use SistemAtc\Banks\Support\PrivateKeyJwt;
 
 /**
  * OAuth2 client_credentials do Itaú — a Fase 2 ("handshake do token") do fluxo
@@ -47,11 +48,7 @@ final class OAuth
             ->withOptions(MtlsOptions::forIntegration($integration))
             ->timeout((int) config('banks.http.timeout', 30))
             ->connectTimeout((int) config('banks.http.connect_timeout', 10))
-            ->post($tokenUrl, [
-                'grant_type' => 'client_credentials',
-                'client_id' => $integration->getClientId(),
-                'client_secret' => $integration->getClientSecret(),
-            ]);
+            ->post($tokenUrl, self::grantParams($integration, $tokenUrl));
 
         $data = $response->json() ?? [];
 
@@ -76,6 +73,63 @@ final class OAuth
             'scope' => $data['scope'] ?? null,
             'obtained_at' => $obtainedAt,
         ]);
+    }
+
+    /**
+     * Monta os parâmetros do grant client_credentials conforme o método de
+     * autenticação de cliente configurado:
+     *
+     *   - client_secret (default): manda client_id + client_secret no corpo.
+     *   - private_key_jwt: manda um client_assertion (JWT RS256 assinado com a
+     *     chave privada do certificado), sem expor segredo. A chave usada é a
+     *     `.key` do certificado (getCertificate()->keyPath); se o app usar uma
+     *     chave de assinatura separada, o host a expõe em settings['jwt_key_pem'].
+     *
+     * @return array<string, string>
+     */
+    private static function grantParams(BankIntegration $integration, string $tokenUrl): array
+    {
+        $base = [
+            'grant_type' => 'client_credentials',
+            'client_id' => $integration->getClientId(),
+        ];
+
+        if (self::method($integration) !== 'private_key_jwt') {
+            return $base + ['client_secret' => $integration->getClientSecret()];
+        }
+
+        $settings = $integration->getBankSettings();
+        $keyPem = $settings['jwt_key_pem'] ?? null;
+        $passphrase = $settings['jwt_key_passphrase'] ?? null;
+
+        // Fallback: a própria chave privada do certificado mTLS.
+        if ($keyPem === null && ($cert = $integration->getCertificate()) !== null && $cert->keyPath !== null) {
+            $keyPem = @file_get_contents($cert->keyPath) ?: null;
+            $passphrase ??= $cert->password;
+        }
+
+        if ($keyPem === null) {
+            throw new BankAuthenticationException(
+                'Itaú private_key_jwt: chave de assinatura ausente (settings.jwt_key_pem ou keyPath do certificado).',
+                bank: 'itau',
+            );
+        }
+
+        return $base + [
+            'client_assertion_type' => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+            'client_assertion' => PrivateKeyJwt::assertion(
+                clientId: $integration->getClientId(),
+                audience: $tokenUrl,
+                privateKeyPem: $keyPem,
+                passphrase: $passphrase,
+            ),
+        ];
+    }
+
+    private static function method(BankIntegration $integration): string
+    {
+        return (string) ($integration->getBankSettings()['auth_method']
+            ?? config('banks.itau.auth_method', 'client_secret'));
     }
 
     /** URL do STS de token conforme o ambiente. */
