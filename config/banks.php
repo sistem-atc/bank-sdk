@@ -31,15 +31,38 @@ return [
     ],
 
     'bradesco' => [
-        // OAuth2: Bradesco usa client_credentials com JWT assertion (private_key
-        // do app) — o grant vai no mesmo host da API.
+        // Autenticação: "Modelo de autenticação MTLS" do Bradesco Developers —
+        // credencial client_id/client_secret emitida no portal, sobre TLS mútuo.
+        // O certificado registrado é a chave PÚBLICA (sandbox: autoassinado;
+        // produção: A1 de Autoridade Certificadora, .pem/.cer/.crt); a chave
+        // privada fica com a aplicação. Ou seja, o mTLS é par PEM cert+key —
+        // mesmo formato do certificado dinâmico do Itaú (ver ClientCertificate).
+        //
+        // URLs confirmadas no guia "Primeiros passos" do portal.
         'base_url' => [
             'production' => env('BRADESCO_BASE_URL', 'https://openapi.bradesco.com.br'),
-            'sandbox' => env('BRADESCO_BASE_URL_SANDBOX', 'https://proxy.api.prebanco.com.br'),
+            'sandbox' => env('BRADESCO_BASE_URL_SANDBOX', 'https://openapisandbox.prebanco.com.br'),
+            // Homologação é um 3º ambiente, distinto do sandbox.
+            'homologacao' => env('BRADESCO_BASE_URL_HOMOLOG', 'https://proxy.api.prebanco.com.br'),
         ],
         'oauth_path' => env('BRADESCO_OAUTH_PATH', '/auth/server/v1.1/token'),
         // Margem (s) antes do expires_at pra tratar o token como expirado.
         'token_safety_margin' => (int) env('BRADESCO_TOKEN_MARGIN', 60),
+
+        // Como no Itaú, os produtos NÃO compartilham um host único: as Open APIs
+        // (Arrecadação, Cobrança, Cobrança Híbrida, Débito de Veículos, Débito
+        // Automático, Saldo/Extrato, Pagamentos e TED) ficam no openapi, e as
+        // APIs Pix num host próprio (qrpix).
+        'hosts' => [
+            'default' => [ // Open APIs
+                'production' => env('BRADESCO_HOST', 'https://openapi.bradesco.com.br'),
+                'sandbox' => env('BRADESCO_HOST_SANDBOX', 'https://openapisandbox.prebanco.com.br'),
+            ],
+            'pix' => [ // APIs Pix
+                'production' => env('BRADESCO_HOST_PIX', 'https://qrpix.bradesco.com.br'),
+                'sandbox' => env('BRADESCO_HOST_PIX_SANDBOX', 'https://qrpix-h.bradesco.com.br'),
+            ],
+        ],
     ],
 
     'itau' => [
