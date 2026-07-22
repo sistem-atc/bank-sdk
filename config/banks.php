@@ -59,6 +59,42 @@ return [
         // RS256). Pode ser sobrescrito por integração em settings['auth_method'].
         'auth_method' => env('ITAU_AUTH_METHOD', 'client_secret'),
         'token_safety_margin' => (int) env('ITAU_TOKEN_MARGIN', 60),
+
+        // As APIs do Itaú NÃO compartilham um host único — cada PRODUTO vive num
+        // subdomínio próprio (confirmado na doc oficial de cada API). O connector
+        // resolve o host por produto+ambiente (ver Support/ItauHosts). Hosts de
+        // produção são os documentados; sandbox é env-overridável (os prefixos de
+        // homologação variam e se fecham quando o app real for configurado).
+        'hosts' => [
+            'default' => [ // SISPAG (Cash Management) + Boletos emissão/instrução
+                'production' => env('ITAU_HOST', 'https://api.itau.com.br'),
+                'sandbox' => env('ITAU_HOST_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+            'account_statement' => [ // Extrato
+                'production' => env('ITAU_HOST_STATEMENT', 'https://account-statement.api.itau.com'),
+                'sandbox' => env('ITAU_HOST_STATEMENT_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+            'boletos_consulta' => [ // Boletos - consulta de detalhe
+                'production' => env('ITAU_HOST_BOLETOS_CONSULTA', 'https://secure.api.cloud.itau.com.br'),
+                'sandbox' => env('ITAU_HOST_BOLETOS_CONSULTA_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+            'boletos_extrato' => [ // Boletos - extrato cobrança
+                'production' => env('ITAU_HOST_BOLETOS_EXTRATO', 'https://boleto.api.itau.com'),
+                'sandbox' => env('ITAU_HOST_BOLETOS_EXTRATO_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+            'pix_recebimentos' => [ // Recebimentos Pix (regulatório Bacen) + Bolecode
+                'production' => env('ITAU_HOST_PIX_RECEB', 'https://pix-pj.api.itau.com'),
+                'sandbox' => env('ITAU_HOST_PIX_RECEB_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+            'pix_automatico_rec' => [ // Pix Automático - recorrência/cobrança
+                'production' => env('ITAU_HOST_PIX_AUT_REC', 'https://pixautomatico-recebimentos.api.itau.com'),
+                'sandbox' => env('ITAU_HOST_PIX_AUT_REC_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+            'pix_automatico_qr' => [ // Pix Automático - emissão de QR Code
+                'production' => env('ITAU_HOST_PIX_AUT_QR', 'https://recebimentos-pix.api.itau.com'),
+                'sandbox' => env('ITAU_HOST_PIX_AUT_QR_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+        ],
     ],
 
 ];

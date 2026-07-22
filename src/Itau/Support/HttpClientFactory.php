@@ -22,7 +22,13 @@ use SistemAtc\Banks\Support\MtlsOptions;
  */
 final class HttpClientFactory
 {
-    public static function make(BankIntegration $integration): PendingRequest
+    /**
+     * @param  string|null  $baseUrl  host da API a usar. Cada produto Itaú vive
+     *   num host próprio (ver ItauHosts); o connector passa o host resolvido
+     *   por produto. Ausente → host 'default' (OAuth::baseUrl). O token OAuth é
+     *   sempre obtido no STS (independe deste host).
+     */
+    public static function make(BankIntegration $integration, ?string $baseUrl = null): PendingRequest
     {
         if (! $integration->isIntegrationActive()) {
             throw new BankAuthenticationException('Integração Itau inativa.', bank: 'itau');
@@ -30,7 +36,7 @@ final class HttpClientFactory
 
         $token = TokenRefresher::valid($integration);
 
-        return Http::baseUrl(OAuth::baseUrl($integration))
+        return Http::baseUrl($baseUrl ?? OAuth::baseUrl($integration))
             ->withOptions(MtlsOptions::forIntegration($integration))
             ->withToken($token)
             ->withHeaders(['x-itau-apikey' => $integration->getClientId()])
