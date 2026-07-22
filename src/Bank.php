@@ -6,6 +6,11 @@ namespace SistemAtc\Banks;
 
 use BadMethodCallException;
 use SistemAtc\Banks\Bradesco\Bradesco;
+use SistemAtc\Banks\Bradesco\Endpoints\Arrecadacao\ArrecadacaoMethods;
+use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\Cobranca;
+use SistemAtc\Banks\Bradesco\Endpoints\CobrancaQrCode\CobrancaQrCodeMethods;
+use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\PixQrCode;
+use SistemAtc\Banks\Bradesco\Endpoints\Ted\TedMethods;
 use SistemAtc\Banks\Contracts\BankConnector;
 use SistemAtc\Banks\Contracts\BankIntegration;
 use SistemAtc\Banks\Contracts\Endpoints\DdaEndpoint;
@@ -25,7 +30,7 @@ use SistemAtc\Banks\Support\AuthToken;
  * do case, sem `new`:
  *
  *   Bank::Bradesco->auth($integration);
- *   Bank::Bradesco->dda($integration)->consultar([...]);
+ *   Bank::Bradesco->cobranca($integration)->titulos()->registrar([...]);
  *   Bank::Itau->statement($integration)->periodo('2026-07-01', '2026-07-31');
  *   Bank::Itau->pix($integration)->pagar([...]);
  *
@@ -131,6 +136,52 @@ enum Bank
         if (! $connector instanceof Itau) {
             throw new BadMethodCallException(
                 "{$this->name}: o domínio '{$domain}' é exclusivo do Itaú e não está disponível neste banco."
+            );
+        }
+
+        return $connector;
+    }
+
+    // ── Produtos específicos do Bradesco ────────────────────────────────────
+
+    /** Cobrança por boleto convencional (registro, baixa, consultas, split, webhook). */
+    public function cobranca(BankIntegration $integration): Cobranca
+    {
+        return $this->bradesco(__FUNCTION__)->cobranca($integration);
+    }
+
+    /** Cobrança com QR Code (boleto híbrido / Bolecode). */
+    public function cobrancaQrCode(BankIntegration $integration): CobrancaQrCodeMethods
+    {
+        return $this->bradesco(__FUNCTION__)->cobrancaQrCode($integration);
+    }
+
+    /** Recebimentos Pix (Bacen): cobranças, location, Pix recebidos e webhook. */
+    public function pixQrCode(BankIntegration $integration): PixQrCode
+    {
+        return $this->bradesco(__FUNCTION__)->pixQrCode($integration);
+    }
+
+    /** Pagamento de contas de consumo e tributos (código de barras). */
+    public function arrecadacao(BankIntegration $integration): ArrecadacaoMethods
+    {
+        return $this->bradesco(__FUNCTION__)->arrecadacao($integration);
+    }
+
+    /** TED — transferência interbancária. */
+    public function ted(BankIntegration $integration): TedMethods
+    {
+        return $this->bradesco(__FUNCTION__)->ted($integration);
+    }
+
+    /** Garante que o case é Bradesco antes de delegar um produto exclusivo dele. */
+    private function bradesco(string $domain): Bradesco
+    {
+        $connector = $this->connector();
+
+        if (! $connector instanceof Bradesco) {
+            throw new BadMethodCallException(
+                "{$this->name}: o domínio '{$domain}' é exclusivo do Bradesco e não está disponível neste banco."
             );
         }
 

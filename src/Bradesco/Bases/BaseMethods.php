@@ -18,6 +18,28 @@ use SistemAtc\Banks\Exceptions\BankRequestException;
  * Base dos grupos de métodos do Bradesco. Centraliza transporte, retry e
  * tratamento de erro — os Endpoints só descrevem path + payload e mapeiam a
  * resposta pro DTO.
+ *
+ * ⚠️ ATENÇÃO — ERRO DE NEGÓCIO COM STATUS DE SUCESSO
+ *
+ * O Bradesco sinaliza falha de negócio SEM usar código HTTP de erro, então
+ * `makeRequest()` NÃO lança nesses casos — a resposta chega normalmente e o
+ * resultado vem dentro do DTO. Confirmado em três produtos:
+ *
+ *   - TED: HTTP 200 com `codigoDeErro` / `codigoDeRetorno` / `codigoDaMensagem`
+ *     preenchidos. Uma TED recusada volta como 200.
+ *   - Pix transferências (SPI): HTTP 202 significa transação REJEITADA
+ *     (`status=REJEITADO` + `codigoMotivo`), não "aceita".
+ *   - Arrecadação/Pagamentos: códigos de retorno no corpo do 200.
+ *
+ * Isso é DELIBERADO: em vários desses casos a recusa é um desfecho de negócio
+ * legítimo que o chamador precisa inspecionar (motivo, código), não uma
+ * exceção. Lançar automaticamente também exigiria adivinhar o campo de erro,
+ * que muda de produto pra produto.
+ *
+ * Consequência prática: NUNCA trate "sem exceção" como "deu certo" num fluxo
+ * que movimenta dinheiro. Cheque o campo de status/código do DTO antes de dar
+ * a operação por concluída — e, em timeout, CONSULTE antes de reenviar (a
+ * maioria dos endpoints não tem chave de idempotência dedicada).
  */
 abstract class BaseMethods
 {
