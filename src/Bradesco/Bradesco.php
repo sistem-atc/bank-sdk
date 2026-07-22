@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace SistemAtc\Banks\Bradesco;
 
 use BadMethodCallException;
+use SistemAtc\Banks\Bradesco\Endpoints\Agora\AgoraMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Arrecadacao\ArrecadacaoMethods;
+use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\Cobranca;
 use SistemAtc\Banks\Bradesco\Endpoints\CobrancaQrCode\CobrancaQrCodeMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\PagamentoBoletos\PagamentoBoletosMethods;
@@ -118,6 +120,18 @@ final class Bradesco implements BankConnector
     public function ted(BankIntegration $integration): TedMethods
     {
         return new TedMethods($this->client($integration), $integration);
+    }
+
+    /** Débito veicular (IPVA, multas, licenciamento) — SP, MG, PR e BA. */
+    public function debitoVeicular(BankIntegration $integration): DebitoVeicularMethods
+    {
+        return new DebitoVeicularMethods($this->client($integration), $integration);
+    }
+
+    /** Ágora Investimentos — posições, saldos, extratos e cadastro (somente leitura). */
+    public function agora(BankIntegration $integration): AgoraMethods
+    {
+        return new AgoraMethods($this->client($integration), $integration);
     }
 
     private function client(

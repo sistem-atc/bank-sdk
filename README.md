@@ -73,13 +73,18 @@ carrega a integração da empresa dona da operação.
 | Domínio | Itaú | Bradesco |
 |---|---|---|
 | Auth (OAuth2 + mTLS) | ✅ | ✅ |
-| Extrato (Account Statement) | ✅ | estrutura |
-| Pagamentos / Pix saída (SISPAG) | ✅ | estrutura |
-| Boletos cobrança | ✅ | estrutura |
-| Recebimentos Pix (Bacen COB/COBV/PIX/LOC/WEBHOOK) | ✅ | — |
+| Extrato / Saldo | ✅ | ✅ |
+| Pagamentos / Pix saída | ✅ | ✅ |
+| Boletos cobrança | ✅ | ✅ |
+| Recebimentos Pix (Bacen COB/COBV/PIX/LOC/WEBHOOK) | ✅ | ✅ |
 | Pix Automático (recorrência + QR) | ✅ | — |
 | Bolecode Pix | ✅ | — |
 | Saque/Troco Pix | ✅ | — |
+| Cobrança QR Code (boleto híbrido) | — | ✅ |
+| Débito veicular (SP/MG/PR/BA) | — | ✅ |
+| Arrecadação (contas de consumo e tributos) | — | ✅ |
+| TED | — | ✅ |
+| Ágora Investimentos (somente leitura) | — | ✅ |
 | CNAB 240/400 (remessa/retorno) | compartilhado | compartilhado |
 
 > As APIs do Itaú vivem em hosts distintos por produto

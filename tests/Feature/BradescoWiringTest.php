@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
 use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Bradesco\Endpoints\Agora\PosicaoMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Arrecadacao\ArrecadacaoMethods;
+use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularSpMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\CobrancaWebhookMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\CobrancaImediataMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Ted\TedMethods;
@@ -35,7 +37,9 @@ it('expoe os produtos do Bradesco pela fachada do enum', function () {
     expect(Bank::Bradesco->cobranca($i)->webhook())->toBeInstanceOf(CobrancaWebhookMethods::class)
         ->and(Bank::Bradesco->pixQrCode($i)->cobrancaImediata())->toBeInstanceOf(CobrancaImediataMethods::class)
         ->and(Bank::Bradesco->arrecadacao($i))->toBeInstanceOf(ArrecadacaoMethods::class)
-        ->and(Bank::Bradesco->ted($i))->toBeInstanceOf(TedMethods::class);
+        ->and(Bank::Bradesco->ted($i))->toBeInstanceOf(TedMethods::class)
+        ->and(Bank::Bradesco->debitoVeicular($i)->sp())->toBeInstanceOf(DebitoVeicularSpMethods::class)
+        ->and(Bank::Bradesco->agora($i)->posicao())->toBeInstanceOf(PosicaoMethods::class);
 });
 
 it('as classes reais satisfazem os contratos cross-bank (intercambiavel com o Itau)', function () {

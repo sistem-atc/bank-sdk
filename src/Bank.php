@@ -6,7 +6,9 @@ namespace SistemAtc\Banks;
 
 use BadMethodCallException;
 use SistemAtc\Banks\Bradesco\Bradesco;
+use SistemAtc\Banks\Bradesco\Endpoints\Agora\AgoraMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Arrecadacao\ArrecadacaoMethods;
+use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\Cobranca;
 use SistemAtc\Banks\Bradesco\Endpoints\CobrancaQrCode\CobrancaQrCodeMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\PixQrCode;
@@ -172,6 +174,18 @@ enum Bank
     public function ted(BankIntegration $integration): TedMethods
     {
         return $this->bradesco(__FUNCTION__)->ted($integration);
+    }
+
+    /** Débito veicular (IPVA, multas, licenciamento) — SP, MG, PR e BA. */
+    public function debitoVeicular(BankIntegration $integration): DebitoVeicularMethods
+    {
+        return $this->bradesco(__FUNCTION__)->debitoVeicular($integration);
+    }
+
+    /** Ágora Investimentos — posições, saldos, extratos e cadastro (somente leitura). */
+    public function agora(BankIntegration $integration): AgoraMethods
+    {
+        return $this->bradesco(__FUNCTION__)->agora($integration);
     }
 
     /** Garante que o case é Bradesco antes de delegar um produto exclusivo dele. */
