@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SistemAtc\Banks\Contracts;
 
+use SistemAtc\Banks\Support\ClientCertificate;
+
 /**
  * Contrato que o HOST (Bunker) implementa pra fornecer as credenciais de uma
  * conexão bancária ao SDK. Espelha o MarketplaceIntegration do pacote de
@@ -14,10 +16,11 @@ namespace SistemAtc\Banks\Contracts;
  *      o access_token expira, reautentica-se com as mesmas credenciais.
  *
  *   2. Certificado mTLS — as APIs de produção de Itaú/Bradesco exigem TLS
- *      mútuo (certificado ICP-Brasil da empresa). O host resolve o .pfx da
- *      empresa (no Bunker, via CompanyCertificate) e expõe path + senha aqui.
- *      Em sandbox o certificado costuma ser dispensado (getCertificatePath
- *      pode devolver null).
+ *      mútuo. O formato varia por banco: o Itaú entrega um "certificado
+ *      dinâmico" como par PEM `.crt`+`.key` separado; o Bradesco/e-CNPJ A1 usa
+ *      PKCS#12 (.pfx). O host resolve isso e devolve um ClientCertificate por
+ *      getCertificate(). Em sandbox o certificado costuma ser dispensado
+ *      (getCertificate() pode devolver null).
  *
  * Multiempresa é nativo: cada CNPJ tem seu app no banco e seu certificado, e
  * cada request carrega a integração da empresa dona da operação.
@@ -49,13 +52,10 @@ interface BankIntegration
     public function getBankSettings(): array;
 
     /**
-     * Path absoluto do certificado mTLS da empresa (.pfx/.p12 ou PEM). null em
-     * sandbox ou quando o banco não exige mTLS naquele ambiente.
+     * Certificado mTLS da empresa (PEM `.crt`+`.key` do Itaú, ou PKCS#12 do
+     * Bradesco). null em sandbox ou quando o banco não exige mTLS no ambiente.
      */
-    public function getCertificatePath(): ?string;
-
-    /** Senha do certificado mTLS (null quando não há certificado). */
-    public function getCertificatePassword(): ?string;
+    public function getCertificate(): ?ClientCertificate;
 
     /** A conexão está ativa? (integração desabilitada aborta na fonte). */
     public function isIntegrationActive(): bool;

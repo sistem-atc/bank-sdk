@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SistemAtc\Banks\Tests\Fakes;
 
 use SistemAtc\Banks\Contracts\BankIntegration;
+use SistemAtc\Banks\Support\ClientCertificate;
 
 /**
  * Implementação de BankIntegration em memória pros testes — o que o host
@@ -21,8 +22,7 @@ final class FakeBankIntegration implements BankIntegration
         private readonly string $clientId = 'cli',
         private readonly string $clientSecret = 'sec',
         private array $settings = [],
-        private readonly ?string $certPath = null,
-        private readonly ?string $certPassword = null,
+        private readonly ?ClientCertificate $certificate = null,
         private readonly bool $active = true,
         private readonly bool $sandbox = true,
     ) {}
@@ -57,14 +57,9 @@ final class FakeBankIntegration implements BankIntegration
         return $this->settings + ['token_expires_at' => $this->tokenExpiresAt];
     }
 
-    public function getCertificatePath(): ?string
+    public function getCertificate(): ?ClientCertificate
     {
-        return $this->certPath;
-    }
-
-    public function getCertificatePassword(): ?string
-    {
-        return $this->certPassword;
+        return $this->certificate;
     }
 
     public function isIntegrationActive(): bool

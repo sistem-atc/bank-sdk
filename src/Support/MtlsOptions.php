@@ -11,9 +11,12 @@ use SistemAtc\Banks\Contracts\BankIntegration;
  * HTTP (Guzzle/cURL). Compartilhado por todos os bancos — o TLS mútuo é
  * idêntico; só muda a base_url e o fluxo de token de cada banco.
  *
- * Suporta PEM (default do Guzzle) e PKCS#12 (.pfx/.p12) — neste caso setamos
- * CURLOPT_SSLCERTTYPE=P12 pra cURL ler o container com a senha. No Bunker o
- * CompanyCertificate guarda .pfx, então o caminho P12 é o quente.
+ * Cobre os dois formatos (ver ClientCertificate):
+ *   - PEM cert+key SEPARADOS (Itaú): `cert` = .crt e `ssl_key` = .key. É o que
+ *     o handshake de `sts.itau.com.br` exige — sem `ssl_key`, o cURL fecha o
+ *     TLS sem a chave privada e o handshake falha.
+ *   - PKCS#12 (.pfx/.p12, Bradesco): `cert` = [container, senha] + cURL
+ *     SSLCERTTYPE=P12 (a chave vive dentro do container).
  */
 final class MtlsOptions
 {
@@ -23,24 +26,31 @@ final class MtlsOptions
      */
     public static function forIntegration(BankIntegration $integration): array
     {
-        $path = $integration->getCertificatePath();
+        $cert = $integration->getCertificate();
 
-        if ($path === null || $path === '') {
+        if ($cert === null || $cert->certPath === '') {
             return [];
         }
 
-        $password = $integration->getCertificatePassword();
+        $password = $cert->password;
 
-        $options = [
-            'cert' => $password !== null && $password !== ''
-                ? [$path, $password]
-                : $path,
-        ];
+        // PKCS#12: chave embutida no container; cURL precisa saber o tipo.
+        if ($cert->isPkcs12()) {
+            return [
+                'cert' => $password !== null && $password !== ''
+                    ? [$cert->certPath, $password]
+                    : $cert->certPath,
+                'curl' => [CURLOPT_SSLCERTTYPE => 'P12'],
+            ];
+        }
 
-        // .pfx/.p12 → PKCS#12; cURL precisa saber o tipo (PEM é o default).
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        if (in_array($ext, ['pfx', 'p12'], true)) {
-            $options['curl'] = [CURLOPT_SSLCERTTYPE => 'P12'];
+        // PEM: certificado e chave privada em arquivos separados.
+        $options = ['cert' => $cert->certPath];
+
+        if ($cert->keyPath !== null && $cert->keyPath !== '') {
+            $options['ssl_key'] = $password !== null && $password !== ''
+                ? [$cert->keyPath, $password]
+                : $cert->keyPath;
         }
 
         return $options;
