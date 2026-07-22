@@ -12,46 +12,64 @@ use SistemAtc\Banks\Support\AuthToken;
 use SistemAtc\Banks\Support\MtlsOptions;
 
 /**
- * OAuth2 client_credentials do Bradesco Open Banking.
+ * OAuth2 client_credentials do Bradesco ("Modelo de autenticação MTLS" do
+ * Bradesco Developers), sempre sobre TLS mútuo.
  *
- * Fluxo base: POST no oauth_path com `grant_type=client_credentials` e o par
- * client_id/client_secret em Basic Auth; a resposta traz access_token +
- * expires_in. Não há refresh_token — reautentica-se quando expira.
+ * São DOIS autorizadores, com colocação de credencial diferente — confirmado
+ * nas specs OpenAPI de cada produto:
  *
- * NOTA sobre variações: algumas APIs Bradesco exigem `client_assertion` (JWT
- * RS256 assinado com a private_key do app) em vez de Basic Auth. Quando for o
- * caso da API-alvo, o host fornece a private_key via getBankSettings()
- * ['jwt_private_key'] e esta classe monta o assertion — ponto único de
- * evolução, sem mexer nos Endpoints. Por ora o grant é o Basic client_credentials.
+ *   - open_api → POST {host}/auth/server-mtls/v2/token
+ *       form: grant_type + client_id + client_secret   (credenciais no CORPO)
+ *
+ *   - pix      → POST {host}/v2/oauth/token
+ *       header Authorization: Basic base64(client_id:client_secret)
+ *       form: grant_type=client_credentials             (só o grant no corpo)
+ *
+ * Ambos respondem {access_token, token_type, expires_in}. Não há
+ * refresh_token — reautentica quando expira.
  */
 final class OAuth
 {
-    public static function authenticate(BankIntegration $integration): AuthToken
-    {
-        $tokenUrl = self::baseUrl($integration).config('banks.bradesco.oauth_path', '/auth/server/v1.1/token');
+    public static function authenticate(
+        BankIntegration $integration,
+        string $family = BradescoHosts::FAMILY_OPEN_API,
+    ): AuthToken {
+        $tokenUrl = BradescoHosts::tokenUrl($family, $integration);
+        $mode = BradescoHosts::credentialsMode($family);
 
         $obtainedAt = time();
 
-        $response = Http::asForm()
+        $request = Http::asForm()
             ->withOptions(MtlsOptions::forIntegration($integration))
-            ->withBasicAuth($integration->getClientId(), $integration->getClientSecret())
             ->timeout((int) config('banks.http.timeout', 30))
-            ->connectTimeout((int) config('banks.http.connect_timeout', 10))
-            ->post($tokenUrl, [
-                'grant_type' => 'client_credentials',
-            ]);
+            ->connectTimeout((int) config('banks.http.connect_timeout', 10));
+
+        $body = ['grant_type' => 'client_credentials'];
+
+        if ($mode === 'basic') {
+            $request = $request->withBasicAuth(
+                $integration->getClientId(),
+                $integration->getClientSecret(),
+            );
+        } else {
+            $body['client_id'] = $integration->getClientId();
+            $body['client_secret'] = $integration->getClientSecret();
+        }
+
+        $response = $request->post($tokenUrl, $body);
 
         $data = $response->json() ?? [];
 
         if ($response->failed() || empty($data['access_token'])) {
             Log::error('Bradesco client_credentials falhou', [
+                'family' => $family,
                 'status' => $response->status(),
                 'error' => $data['error'] ?? null,
                 'integration_id' => $integration->getIntegrationIdentifier(),
             ]);
 
             throw new BankAuthenticationException(
-                'Falha na autenticação Bradesco: '
+                "Falha na autenticação Bradesco ({$family}): "
                 .($data['error_description'] ?? $data['error'] ?? 'HTTP '.$response->status()),
                 bank: 'bradesco',
             );
@@ -61,16 +79,15 @@ final class OAuth
             'access_token' => (string) $data['access_token'],
             'expires_in' => (int) ($data['expires_in'] ?? 3600),
             'token_type' => (string) ($data['token_type'] ?? 'Bearer'),
-            'scope' => $data['scope'] ?? null,
             'obtained_at' => $obtainedAt,
         ]);
     }
 
-    /** URL base conforme o ambiente (produção vs homologação). */
-    public static function baseUrl(BankIntegration $integration): string
-    {
-        $env = ($integration->isSandbox() || config('banks.sandbox', true)) ? 'sandbox' : 'production';
-
-        return rtrim((string) config("banks.bradesco.base_url.{$env}"), '/');
+    /** Host base da família (mantido por compat com o factory). */
+    public static function baseUrl(
+        BankIntegration $integration,
+        string $family = BradescoHosts::FAMILY_OPEN_API,
+    ): string {
+        return BradescoHosts::resolve($family, $integration);
     }
 }

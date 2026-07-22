@@ -45,9 +45,26 @@ return [
             // Homologação é um 3º ambiente, distinto do sandbox.
             'homologacao' => env('BRADESCO_BASE_URL_HOMOLOG', 'https://proxy.api.prebanco.com.br'),
         ],
-        'oauth_path' => env('BRADESCO_OAUTH_PATH', '/auth/server/v1.1/token'),
         // Margem (s) antes do expires_at pra tratar o token como expirado.
         'token_safety_margin' => (int) env('BRADESCO_TOKEN_MARGIN', 60),
+
+        // O Bradesco tem DOIS autorizadores, com colocação de credencial
+        // diferente (confirmado nas specs OpenAPI de cada produto):
+        //   - open_api: POST /auth/server-mtls/v2/token — client_id e
+        //     client_secret vão no CORPO (form-urlencoded).
+        //   - pix:      POST /v2/oauth/token — credenciais no header
+        //     Authorization (Basic); no corpo vai só grant_type.
+        // Cada família de produto aponta pro seu autorizador.
+        'oauth' => [
+            'open_api' => [
+                'path' => env('BRADESCO_OAUTH_PATH', '/auth/server-mtls/v2/token'),
+                'credentials' => 'body',
+            ],
+            'pix' => [
+                'path' => env('BRADESCO_OAUTH_PATH_PIX', '/v2/oauth/token'),
+                'credentials' => 'basic',
+            ],
+        ],
 
         // Como no Itaú, os produtos NÃO compartilham um host único: as Open APIs
         // (Arrecadação, Cobrança, Cobrança Híbrida, Débito de Veículos, Débito

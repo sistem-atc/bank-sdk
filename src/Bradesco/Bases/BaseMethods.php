@@ -7,7 +7,9 @@ namespace SistemAtc\Banks\Bradesco\Bases;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
+use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
 use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Bradesco\Support\TokenRefresher;
 use SistemAtc\Banks\Common\Enums\HttpMethod;
 use SistemAtc\Banks\Contracts\BankIntegration;
 use SistemAtc\Banks\Exceptions\BankRequestException;
@@ -26,6 +28,16 @@ abstract class BaseMethods
         protected BankIntegration $integration,
     ) {
         $this->httpClient = $httpClient;
+    }
+
+    /**
+     * Família de autorizador/host deste grupo de métodos. Produtos Pix
+     * sobrescrevem para FAMILY_PIX — o Bradesco tem dois autorizadores, e o
+     * token de um não vale no outro.
+     */
+    protected function family(): string
+    {
+        return BradescoHosts::FAMILY_OPEN_API;
     }
 
     /**
@@ -50,10 +62,12 @@ abstract class BaseMethods
             return $this->makeRequest($method, $apiPath, $query, $body, $retryAttempt + 1);
         }
 
-        // 401/403: token pode ter expirado no servidor antes do nosso expires_in;
-        // reconstrói o client (força reautenticação) e tenta 1x.
+        // 401/403: token pode ter expirado no servidor antes do nosso expires_in.
+        // Descarta o token EM CACHE da família e reconstrói o client (força
+        // reautenticação no autorizador certo) antes de tentar 1x.
         if (in_array($response->status(), [401, 403], true) && $retryAttempt === 0) {
-            $this->httpClient = HttpClientFactory::make($this->integration);
+            TokenRefresher::forget($this->integration, $this->family());
+            $this->httpClient = HttpClientFactory::make($this->integration, $this->family());
 
             return $this->makeRequest($method, $apiPath, $query, $body, $retryAttempt + 1);
         }

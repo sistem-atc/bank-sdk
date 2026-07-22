@@ -8,6 +8,7 @@ use SistemAtc\Banks\Bradesco\Endpoints\Dda\DdaMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Payments\PaymentsMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Pix\PixMethods;
 use SistemAtc\Banks\Bradesco\Endpoints\Statement\StatementMethods;
+use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
 use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Bradesco\Support\OAuth;
 use SistemAtc\Banks\Contracts\BankConnector;
@@ -38,7 +39,7 @@ final class Bradesco implements BankConnector
 
     public function pix(BankIntegration $integration): PixMethods
     {
-        return new PixMethods(HttpClientFactory::make($integration), $integration);
+        return new PixMethods(HttpClientFactory::make($integration, BradescoHosts::FAMILY_PIX), $integration);
     }
 
     public function payments(BankIntegration $integration): PaymentsMethods

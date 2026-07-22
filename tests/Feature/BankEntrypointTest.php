@@ -17,9 +17,9 @@ it('resolve o connector concreto a partir do case do enum', function () {
         ->and(Bank::Itau->code())->toBe('341');
 });
 
-it('autentica no Bradesco via client_credentials e devolve AuthToken', function () {
+it('autentica no Bradesco (open_api) com credenciais NO CORPO', function () {
     Http::fake([
-        '*/auth/server/v1.1/token' => Http::response([
+        '*/auth/server-mtls/v2/token' => Http::response([
             'access_token' => 'TOKEN_BRADESCO',
             'expires_in' => 3600,
             'token_type' => 'Bearer',
@@ -32,10 +32,30 @@ it('autentica no Bradesco via client_credentials e devolve AuthToken', function 
         ->and($token->accessToken)->toBe('TOKEN_BRADESCO')
         ->and($token->isExpired(now: time()))->toBeFalse();
 
-    // Basic auth com client_id/secret foi enviado ao grant.
-    Http::assertSent(fn ($r) => str_contains($r->url(), '/auth/server/v1.1/token')
+    // Autorizador das Open APIs: client_id/secret vão no FORM, não em Basic.
+    Http::assertSent(fn ($r) => str_contains($r->url(), '/auth/server-mtls/v2/token')
         && $r['grant_type'] === 'client_credentials'
-        && $r->hasHeader('Authorization'));
+        && $r['client_id'] === 'cli'
+        && $r['client_secret'] === 'sec');
+});
+
+it('autentica no Bradesco (pix) com Basic auth no outro autorizador', function () {
+    Http::fake([
+        '*/v2/oauth/token' => Http::response(['access_token' => 'TOKEN_PIX', 'expires_in' => 3600]),
+    ]);
+
+    $token = \SistemAtc\Banks\Bradesco\Support\OAuth::authenticate(
+        new FakeBankIntegration(),
+        \SistemAtc\Banks\Bradesco\Support\BradescoHosts::FAMILY_PIX,
+    );
+
+    expect($token->accessToken)->toBe('TOKEN_PIX');
+
+    // Família Pix: credenciais em Basic, só grant_type no corpo.
+    Http::assertSent(fn ($r) => str_contains($r->url(), '/v2/oauth/token')
+        && $r->hasHeader('Authorization')
+        && $r['grant_type'] === 'client_credentials'
+        && ! isset($r['client_secret']));
 });
 
 it('autentica no Itau usando o host STS separado (nao a base_url da API)', function () {
@@ -57,7 +77,7 @@ it('autentica no Itau usando o host STS separado (nao a base_url da API)', funct
 
 it('encadeia Bank::Bradesco->dda() reautenticando e retornando DTOs tipados', function () {
     Http::fake([
-        '*/auth/server/v1.1/token' => Http::response(['access_token' => 'T', 'expires_in' => 3600]),
+        '*/auth/server-mtls/v2/token' => Http::response(['access_token' => 'T', 'expires_in' => 3600]),
         '*/dda/v1/boletos*' => Http::response([
             'boletos' => [
                 ['linhaDigitavel' => '237...', 'valorNominal' => 150.5, 'situacao' => 'aberto'],
@@ -80,18 +100,23 @@ it('encadeia Bank::Bradesco->dda() reautenticando e retornando DTOs tipados', fu
         && $r->hasHeader('Authorization', 'Bearer T'));
 });
 
-it('reaproveita o token vigente sem reautenticar quando ainda valido', function () {
+it('autentica UMA vez e reaproveita o token em cache nas chamadas seguintes', function () {
     Http::fake([
         '*/dda/v1/boletos*' => Http::response(['boletos' => []]),
-        '*/auth/server/v1.1/token' => Http::response(['access_token' => 'NAO_DEVERIA', 'expires_in' => 3600]),
+        '*/auth/server-mtls/v2/token' => Http::response(['access_token' => 'T1', 'expires_in' => 3600]),
     ]);
 
     $integration = new FakeBankIntegration();
-    $integration->accessToken = 'JA_VALIDO';
-    $integration->tokenExpiresAt = time() + 3600;
 
+    // Três chamadas de negócio seguidas.
+    Bank::Bradesco->dda($integration)->consultar();
+    Bank::Bradesco->dda($integration)->consultar();
     Bank::Bradesco->dda($integration)->consultar();
 
-    // Nao houve chamada ao grant: o token em mãos ainda valia.
-    Http::assertNotSent(fn ($r) => str_contains($r->url(), '/auth/server/v1.1/token'));
+    // O token vive em cache POR FAMÍLIA — só o primeiro acesso vai ao autorizador.
+    $grants = collect(Http::recorded())
+        ->filter(fn ($pair) => str_contains($pair[0]->url(), '/auth/server-mtls/v2/token'))
+        ->count();
+
+    expect($grants)->toBe(1);
 });

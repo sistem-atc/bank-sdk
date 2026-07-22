@@ -6,42 +6,50 @@ namespace SistemAtc\Banks\Bradesco\Support;
 
 use Illuminate\Support\Facades\Cache;
 use SistemAtc\Banks\Contracts\BankIntegration;
-use SistemAtc\Banks\Support\AuthToken;
 
 /**
  * Garante um access_token Bradesco válido antes de cada request.
  *
- * Diferença vs marketplaces: client_credentials NÃO tem refresh_token — quando
- * expira, reautentica com client_id/secret (OAuth::authenticate). O lock por
- * integração evita que N requests concorrentes disparem N autenticações; o
- * double-check reaproveita o token que outra request já renovou.
+ * Particularidade do Bradesco: há DOIS autorizadores (open_api e pix), então
+ * uma mesma integração tem DOIS tokens vivos ao mesmo tempo — e o contract
+ * BankIntegration guarda só um. Por isso o token vigente é mantido em cache
+ * POR FAMÍLIA (chave integração+família), com TTL derivado do expires_in.
+ * O `updateAccessToken` do host continua sendo chamado para persistência e
+ * observabilidade, mas não é a fonte de verdade aqui.
  *
- * Validade: o host informa a expiração via getBankSettings()['token_expires_at']
- * (epoch s) — persistido no updateAccessToken. Sem esse dado, trata como
- * expirado (reautentica) pra nunca usar token vencido.
+ * O lock por chave evita que N requests concorrentes disparem N autenticações;
+ * o double-check reaproveita o token que outra request já obteve.
  */
 final class TokenRefresher
 {
-    public static function valid(BankIntegration $integration): string
-    {
-        $token = $integration->getAccessToken();
+    public static function valid(
+        BankIntegration $integration,
+        string $family = BradescoHosts::FAMILY_OPEN_API,
+    ): string {
+        $key = self::cacheKey($integration, $family);
 
-        if ($token && ! self::isExpired($integration)) {
-            return $token;
+        $cached = Cache::get($key);
+        if (is_string($cached) && $cached !== '') {
+            return $cached;
         }
 
-        $lock = Cache::lock('bradesco_token_'.$integration->getIntegrationIdentifier(), 15);
+        $lock = Cache::lock($key.':lock', 15);
 
         try {
             $lock->block(10);
 
-            // Double-check: outra request pode ter reautenticado sob o lock.
-            $token = $integration->getAccessToken();
-            if ($token && ! self::isExpired($integration)) {
-                return $token;
+            $cached = Cache::get($key);
+            if (is_string($cached) && $cached !== '') {
+                return $cached;
             }
 
-            $auth = OAuth::authenticate($integration);
+            $auth = OAuth::authenticate($integration, $family);
+
+            // Expira o cache ANTES do token de fato, pela margem de segurança.
+            $margin = (int) config('banks.bradesco.token_safety_margin', 60);
+            $ttl = max(30, $auth->expiresIn - $margin);
+
+            Cache::put($key, $auth->accessToken, $ttl);
             $integration->updateAccessToken($auth->accessToken, $auth->expiresIn);
 
             return $auth->accessToken;
@@ -50,17 +58,14 @@ final class TokenRefresher
         }
     }
 
-    private static function isExpired(BankIntegration $integration): bool
+    /** Descarta o token da família (usado quando o banco devolve 401/403). */
+    public static function forget(BankIntegration $integration, string $family): void
     {
-        $margin = (int) config('banks.bradesco.token_safety_margin', 60);
+        Cache::forget(self::cacheKey($integration, $family));
+    }
 
-        // Se o host expõe um AuthToken/instante de expiração, usa-o.
-        $expiresAt = $integration->getBankSettings()['token_expires_at'] ?? null;
-
-        if ($expiresAt === null) {
-            return true;
-        }
-
-        return time() >= ((int) $expiresAt - $margin);
+    private static function cacheKey(BankIntegration $integration, string $family): string
+    {
+        return 'bradesco_token:'.$integration->getIntegrationIdentifier().':'.$family;
     }
 }

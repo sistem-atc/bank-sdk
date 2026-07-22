@@ -11,21 +11,23 @@ use SistemAtc\Banks\Exceptions\BankAuthenticationException;
 use SistemAtc\Banks\Support\MtlsOptions;
 
 /**
- * Monta o cliente HTTP autenticado do Bradesco: base_url do ambiente, token
- * client_credentials válido (via TokenRefresher) e o certificado mTLS anexado
- * ao transporte. Chamado antes de cada grupo de métodos, igual ao molde.
+ * Monta o cliente HTTP autenticado do Bradesco: host da FAMÍLIA do produto
+ * (open_api ou pix), token válido do autorizador correspondente e o
+ * certificado mTLS anexado ao transporte.
  */
 final class HttpClientFactory
 {
-    public static function make(BankIntegration $integration): PendingRequest
-    {
+    public static function make(
+        BankIntegration $integration,
+        string $family = BradescoHosts::FAMILY_OPEN_API,
+    ): PendingRequest {
         if (! $integration->isIntegrationActive()) {
             throw new BankAuthenticationException('Integração Bradesco inativa.', bank: 'bradesco');
         }
 
-        $token = TokenRefresher::valid($integration);
+        $token = TokenRefresher::valid($integration, $family);
 
-        return Http::baseUrl(OAuth::baseUrl($integration))
+        return Http::baseUrl(BradescoHosts::resolve($family, $integration))
             ->withOptions(MtlsOptions::forIntegration($integration))
             ->withToken($token)
             ->timeout((int) config('banks.http.timeout', 30))
