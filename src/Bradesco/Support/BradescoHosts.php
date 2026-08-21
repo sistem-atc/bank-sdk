@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SistemAtc\Banks\Bradesco\Support;
 
 use SistemAtc\Banks\Contracts\BankIntegration;
+use SistemAtc\Banks\Support\Environment;
 
 /**
  * Resolve host e autorizador por FAMÍLIA de produto do Bradesco.
@@ -59,6 +60,6 @@ final class BradescoHosts
 
     private static function env(BankIntegration $integration): string
     {
-        return ($integration->isSandbox() || config('banks.sandbox', true)) ? 'sandbox' : 'production';
+        return Environment::forIntegration($integration);
     }
 }

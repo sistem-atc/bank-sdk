@@ -7,6 +7,7 @@ namespace SistemAtc\Banks\Itau\Support;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use SistemAtc\Banks\Contracts\BankIntegration;
+use SistemAtc\Banks\Support\Environment;
 use SistemAtc\Banks\Exceptions\BankAuthenticationException;
 use SistemAtc\Banks\Support\AuthToken;
 use SistemAtc\Banks\Support\MtlsOptions;
@@ -146,6 +147,6 @@ final class OAuth
 
     private static function env(BankIntegration $integration): string
     {
-        return ($integration->isSandbox() || config('banks.sandbox', true)) ? 'sandbox' : 'production';
+        return Environment::forIntegration($integration);
     }
 }

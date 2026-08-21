@@ -21,8 +21,13 @@ declare(strict_types=1);
 
 return [
 
-    // Liga o modo homologação globalmente. Pode ser sobrescrito por banco.
-    'sandbox' => env('BANKS_SANDBOX', true),
+    // KILL-SWITCH global de homologação. Quem decide o ambiente é a
+    // INTEGRAÇÃO (o campo environment de cada empresa no banco) — ver
+    // Support/Environment. Ligar isto força TODAS as integrações pro
+    // sandbox, o que serve pra um staging apontar pro banco de teste sem
+    // mexer no cadastro. Default desligado: produção não pode depender de
+    // uma variável de ambiente estar presente.
+    'sandbox' => env('BANKS_SANDBOX', false),
 
     // Timeouts de transporte (segundos), aplicáveis a todos os bancos.
     'http' => [

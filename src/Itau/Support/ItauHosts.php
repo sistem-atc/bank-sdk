@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SistemAtc\Banks\Itau\Support;
 
 use SistemAtc\Banks\Contracts\BankIntegration;
+use SistemAtc\Banks\Support\Environment;
 
 /**
  * Resolve o HOST de cada produto de API do Itaú. Ao contrário do padrão de um
@@ -20,7 +21,7 @@ final class ItauHosts
 {
     public static function resolve(string $product, BankIntegration $integration): string
     {
-        $env = ($integration->isSandbox() || config('banks.sandbox', true)) ? 'sandbox' : 'production';
+        $env = Environment::forIntegration($integration);
 
         $host = config("banks.itau.hosts.{$product}.{$env}")
             ?? config("banks.itau.hosts.default.{$env}");
