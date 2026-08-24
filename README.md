@@ -76,9 +76,11 @@ carrega a integração da empresa dona da operação.
 | Extrato / Saldo | ✅ | ✅ |
 | Pagamentos / Pix saída | ✅ | ✅ |
 | Boletos cobrança | ✅ | ✅ |
-| Recebimentos Pix (Bacen COB/COBV/PIX/LOC/WEBHOOK) | ✅ | ✅ |
-| Pix Automático (recorrência + QR) | ✅ | — |
+| Recebimentos Pix (Bacen COB/COBV/PIX/LOC/WEBHOOK + resolver QR) | ✅ | ✅ |
+| Conciliação Pix (lançamentos conciliados) | ✅ | — |
+| Pix Automático (recorrência + cobrança + QR) | ✅ | — |
 | Bolecode Pix | ✅ | — |
+| Boletos Negociados / Ativos Financeiros (recebíveis) | ✅ | — |
 | Saque/Troco Pix | ✅ | — |
 | Cobrança QR Code (boleto híbrido) | — | ✅ |
 | Débito veicular (SP/MG/PR/BA) | — | ✅ |

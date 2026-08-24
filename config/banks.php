@@ -143,6 +143,12 @@ return [
                 'production' => env('ITAU_HOST_PIX_AUT_QR', 'https://recebimentos-pix.api.itau.com'),
                 'sandbox' => env('ITAU_HOST_PIX_AUT_QR_SANDBOX', 'https://api.itau.com.br/sandbox'),
             ],
+            'boleto_negociado' => [ // Boletos Negociados / Ativos financeiros (base /boleto/v1)
+                'production' => env('ITAU_HOST_BOLETO_NEGOCIADO', 'https://boleto.api.itau.com'),
+                'sandbox' => env('ITAU_HOST_BOLETO_NEGOCIADO_SANDBOX', 'https://api.itau.com.br/sandbox'),
+            ],
+            // Conciliação Pix (base /conciliacao/v1) roda no MESMO host do
+            // Recebimentos Pix (pix-pj.api.itau.com) — ver `pix_recebimentos`.
         ],
     ],
 

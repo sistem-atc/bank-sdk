@@ -8,7 +8,9 @@ use BadMethodCallException;
 use SistemAtc\Banks\Contracts\BankConnector;
 use SistemAtc\Banks\Contracts\BankIntegration;
 use SistemAtc\Banks\Itau\Endpoints\Bolecode\BolecodeMethods;
+use SistemAtc\Banks\Itau\Endpoints\BoletoNegociado\BoletoNegociadoMethods;
 use SistemAtc\Banks\Itau\Endpoints\Boletos\Boletos;
+use SistemAtc\Banks\Itau\Endpoints\Conciliacao\ConciliacaoMethods;
 use SistemAtc\Banks\Itau\Endpoints\Payments\PaymentsMethods;
 use SistemAtc\Banks\Itau\Endpoints\Pix\PixMethods;
 use SistemAtc\Banks\Itau\Endpoints\PixAutomatico\PixAutomatico;
@@ -96,6 +98,18 @@ final class Itau implements BankConnector
     public function saqueTroco(BankIntegration $integration): SaqueTroco
     {
         return new SaqueTroco($integration);
+    }
+
+    /** Conciliação Pix — lançamentos Pix conciliados (mesmo host do Recebimentos Pix). */
+    public function conciliacao(BankIntegration $integration): ConciliacaoMethods
+    {
+        return new ConciliacaoMethods($this->client($integration, 'pix_recebimentos'), $integration);
+    }
+
+    /** Boletos Negociados / Ativos Financeiros — consulta rica, criação e recebíveis. */
+    public function boletoNegociado(BankIntegration $integration): BoletoNegociadoMethods
+    {
+        return new BoletoNegociadoMethods($this->client($integration, 'boleto_negociado'), $integration);
     }
 
     private function client(BankIntegration $integration, string $product): \Illuminate\Http\Client\PendingRequest

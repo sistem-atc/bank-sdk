@@ -20,18 +20,24 @@ use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\WebhookConfig;
  * aceite do pagador), `/locrec` (locations do payload de recorrência) e
  * `/webhookrec` (webhook de recorrência).
  *
- * Host de produção dedicado: `https://pixautomatico-recebimentos.api.itau.com`
- * (sem prefixo de versão nos paths — sandbox usa sufixo `/v1`).
+ * Host de produção dedicado: `https://pixautomatico-recebimentos.api.itau.com`,
+ * com prefixo de versão `/pixautomatico/v1` em TODOS os paths (conforme a
+ * collection `ng7_api_pixautomatico_v1`, baseUrl `.../pixautomatico/v1`).
  */
 final class RecorrenciaMethods extends BaseMethods
 {
-    private const REC = '/rec';
+    private const PREFIX = '/pixautomatico/v1';
 
-    private const SOLICREC = '/solicrec';
+    private const REC = self::PREFIX.'/rec';
 
-    private const LOCREC = '/locrec';
+    /** Os dados do pagador vivem sob `/recorrencia`, não `/rec`. */
+    private const RECORRENCIA = self::PREFIX.'/recorrencia';
 
-    private const WEBHOOK = '/webhookrec';
+    private const SOLICREC = self::PREFIX.'/solicrec';
+
+    private const LOCREC = self::PREFIX.'/locrec';
+
+    private const WEBHOOK = self::PREFIX.'/webhookrec';
 
     // ---- Recorrência (/rec) --------------------------------------------
 
@@ -86,13 +92,32 @@ final class RecorrenciaMethods extends BaseMethods
 
     /**
      * Consultar dados do pagador da recorrência —
-     * GET /rec/{idRec}/dados-pagador.
+     * GET /recorrencia/{idRec}/dados-pagador.
      */
     public function consultarDadosPagador(string $idRec): DTOInterface
     {
-        $data = $this->makeRequest(HttpMethod::GET, self::REC.'/'.rawurlencode($idRec).'/dados-pagador');
+        $data = $this->makeRequest(HttpMethod::GET, self::RECORRENCIA.'/'.rawurlencode($idRec).'/dados-pagador');
 
         return DadosPagador::fromArray($data);
+    }
+
+    /**
+     * Resolver o payload de recorrência a partir do token de acesso da URL do QR
+     * (endpoint público, sem mTLS/OAuth) —
+     * GET /{endpointOpcional}/token/rec/{recUrlAccessToken}.
+     *
+     * @param  string  $recUrlAccessToken  token que vem na URL do QR de recorrência
+     * @param  string  $endpointOpcional  segmento opcional exigido por alguns PSPs (vazio por padrão)
+     * @return array<string, mixed>  payload cru da recorrência
+     */
+    public function resolverPayloadPorToken(string $recUrlAccessToken, string $endpointOpcional = ''): array
+    {
+        $prefixoOpcional = $endpointOpcional === '' ? '' : '/'.rawurlencode($endpointOpcional);
+
+        return $this->makeRequest(
+            HttpMethod::GET,
+            self::PREFIX.$prefixoOpcional.'/token/rec/'.rawurlencode($recUrlAccessToken),
+        );
     }
 
     // ---- Solicitação de recorrência (/solicrec) ------------------------
@@ -167,14 +192,15 @@ final class RecorrenciaMethods extends BaseMethods
     }
 
     /**
-     * Desvincular uma recorrência de uma location —
-     * DELETE /locrec/{id}/{idRec}.
+     * Desvincular a recorrência de uma location — DELETE /locrec/{id}/idRec.
+     * O segmento `idRec` é LITERAL (não é o id da recorrência): remove o
+     * vínculo rec↔location da location `{id}`.
      */
-    public function desvincularLocation(string $id, string $idRec): DTOInterface
+    public function desvincularLocation(string $id): DTOInterface
     {
         $data = $this->makeRequest(
             HttpMethod::DELETE,
-            self::LOCREC.'/'.rawurlencode($id).'/'.rawurlencode($idRec),
+            self::LOCREC.'/'.rawurlencode($id).'/idRec',
         );
 
         return Loc::fromArray($data);

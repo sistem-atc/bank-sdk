@@ -16,13 +16,17 @@ use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\WebhookConfig;
  * o agendamento de cada débito sob um contrato de recorrência. Cobre os grupos
  * `/cobr` e `/webhookcobr` (webhook de cobrança).
  *
- * Host de produção dedicado: `https://pixautomatico-recebimentos.api.itau.com`.
+ * Host de produção dedicado: `https://pixautomatico-recebimentos.api.itau.com`,
+ * com prefixo de versão `/pixautomatico/v1` nos paths (conforme a collection
+ * `ng7_api_pixautomatico_v1`).
  */
 final class CobrancaRecorrenteMethods extends BaseMethods
 {
-    private const COBR = '/cobr';
+    private const PREFIX = '/pixautomatico/v1';
 
-    private const WEBHOOK = '/webhookcobr';
+    private const COBR = self::PREFIX.'/cobr';
+
+    private const WEBHOOK = self::PREFIX.'/webhookcobr';
 
     // ---- Cobrança recorrente (/cobr) -----------------------------------
 

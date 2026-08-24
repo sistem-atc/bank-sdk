@@ -50,6 +50,12 @@ final class RecebimentosPix
         return new LoteCobrancaVencimentoMethods($this->client(), $this->integration);
     }
 
+    /** Resolvedores públicos de payload de QR (GET /qr, /qr/cobv). */
+    public function qrCode(): QrCodeMethods
+    {
+        return new QrCodeMethods($this->client(), $this->integration);
+    }
+
     private function client(): PendingRequest
     {
         return HttpClientFactory::make(

@@ -20,7 +20,9 @@ use SistemAtc\Banks\Contracts\Endpoints\PaymentsEndpoint;
 use SistemAtc\Banks\Contracts\Endpoints\PixEndpoint;
 use SistemAtc\Banks\Contracts\Endpoints\StatementEndpoint;
 use SistemAtc\Banks\Itau\Endpoints\Bolecode\BolecodeMethods;
+use SistemAtc\Banks\Itau\Endpoints\BoletoNegociado\BoletoNegociadoMethods;
 use SistemAtc\Banks\Itau\Endpoints\Boletos\Boletos;
+use SistemAtc\Banks\Itau\Endpoints\Conciliacao\ConciliacaoMethods;
 use SistemAtc\Banks\Itau\Endpoints\PixAutomatico\PixAutomatico;
 use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\RecebimentosPix;
 use SistemAtc\Banks\Itau\Endpoints\SaqueTroco\SaqueTroco;
@@ -128,6 +130,18 @@ enum Bank
     public function saqueTroco(BankIntegration $integration): SaqueTroco
     {
         return $this->itau(__FUNCTION__)->saqueTroco($integration);
+    }
+
+    /** Conciliação Pix — lançamentos Pix conciliados. */
+    public function conciliacao(BankIntegration $integration): ConciliacaoMethods
+    {
+        return $this->itau(__FUNCTION__)->conciliacao($integration);
+    }
+
+    /** Boletos Negociados / Ativos Financeiros — consulta rica, criação e recebíveis. */
+    public function boletoNegociado(BankIntegration $integration): BoletoNegociadoMethods
+    {
+        return $this->itau(__FUNCTION__)->boletoNegociado($integration);
     }
 
     /** Garante que o case é Itaú antes de delegar um produto exclusivo dele. */

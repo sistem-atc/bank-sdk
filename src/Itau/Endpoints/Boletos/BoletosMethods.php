@@ -37,6 +37,20 @@ final class BoletosMethods extends BaseMethods
     }
 
     /**
+     * Lista os boletos emitidos (paginado) — GET /cash_management/v2/boletos.
+     * A consulta detalhada por filtros ricos (pagador, situação etc.) vive na
+     * API de Boletos Negociados ({@see \SistemAtc\Banks\Itau\Endpoints\BoletoNegociado\BoletoNegociadoMethods});
+     * aqui é a listagem simples do próprio produto de emissão.
+     *
+     * @param  array<string, mixed>  $filtros
+     * @return array<string, mixed>  envelope cru (com `data`/paginação)
+     */
+    public function listar(array $filtros = []): array
+    {
+        return $this->makeRequest(HttpMethod::GET, self::BASE, query: $filtros);
+    }
+
+    /**
      * Simula a emissão (não registra): força `etapa_processo_boleto = 'validacao'`.
      *
      * @param  array<string, mixed>  $dados

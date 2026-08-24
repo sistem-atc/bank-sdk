@@ -46,4 +46,16 @@ final class QrCodeMethods extends BaseMethods
 
         return Cobranca::fromArray($data);
     }
+
+    /**
+     * Cancelar cobrança com recorrência — PATCH /cobrancas/{cobrancaId}.
+     *
+     * @param  array<string, mixed>  $dados  corpo do cancelamento (ex.: status)
+     */
+    public function cancelar(string $cobrancaId, array $dados = []): DTOInterface
+    {
+        $data = $this->makeRequest(HttpMethod::PATCH, self::BASE.'/'.rawurlencode($cobrancaId), body: $dados);
+
+        return Cobranca::fromArray($data);
+    }
 }
