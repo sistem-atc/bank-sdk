@@ -55,19 +55,19 @@ final class Itau implements BankConnector
     /** Extrato de conta (Account Statement) — conciliação bancária. */
     public function statement(BankIntegration $integration): StatementMethods
     {
-        return new StatementMethods($this->client($integration, 'account_statement'), $integration);
+        return new StatementMethods($this->client($integration, 'account_statement'), $integration, ItauHosts::resolve('account_statement', $integration));
     }
 
     /** Pix de SAÍDA via SISPAG (Cash Management). */
     public function pix(BankIntegration $integration): PixMethods
     {
-        return new PixMethods($this->client($integration, 'default'), $integration);
+        return new PixMethods($this->client($integration, 'default'), $integration, ItauHosts::resolve('default', $integration));
     }
 
     /** Consulta de pagamentos SISPAG (todas as modalidades). */
     public function payments(BankIntegration $integration): PaymentsMethods
     {
-        return new PaymentsMethods($this->client($integration, 'default'), $integration);
+        return new PaymentsMethods($this->client($integration, 'default'), $integration, ItauHosts::resolve('default', $integration));
     }
 
     /** Cobrança por boleto: emissão, instrução, consulta e extrato. */
@@ -91,7 +91,7 @@ final class Itau implements BankConnector
     /** Bolecode Pix — boleto híbrido com QR Code Pix na mesma emissão. */
     public function bolecode(BankIntegration $integration): BolecodeMethods
     {
-        return new BolecodeMethods($this->client($integration, 'pix_recebimentos'), $integration);
+        return new BolecodeMethods($this->client($integration, 'pix_recebimentos'), $integration, ItauHosts::resolve('pix_recebimentos', $integration));
     }
 
     /** Pix Saque e Troco — pontos de atendimento e remuneração. */
@@ -103,13 +103,13 @@ final class Itau implements BankConnector
     /** Conciliação Pix — lançamentos Pix conciliados (mesmo host do Recebimentos Pix). */
     public function conciliacao(BankIntegration $integration): ConciliacaoMethods
     {
-        return new ConciliacaoMethods($this->client($integration, 'pix_recebimentos'), $integration);
+        return new ConciliacaoMethods($this->client($integration, 'pix_recebimentos'), $integration, ItauHosts::resolve('pix_recebimentos', $integration));
     }
 
     /** Boletos Negociados / Ativos Financeiros — consulta rica, criação e recebíveis. */
     public function boletoNegociado(BankIntegration $integration): BoletoNegociadoMethods
     {
-        return new BoletoNegociadoMethods($this->client($integration, 'boleto_negociado'), $integration);
+        return new BoletoNegociadoMethods($this->client($integration, 'boleto_negociado'), $integration, ItauHosts::resolve('boleto_negociado', $integration));
     }
 
     private function client(BankIntegration $integration, string $product): \Illuminate\Http\Client\PendingRequest

@@ -22,17 +22,17 @@ final class PixAutomatico
 
     public function recorrencias(): RecorrenciaMethods
     {
-        return new RecorrenciaMethods($this->client('pix_automatico_rec'), $this->integration);
+        return new RecorrenciaMethods($this->client('pix_automatico_rec'), $this->integration, ItauHosts::resolve('pix_automatico_rec', $this->integration));
     }
 
     public function cobrancas(): CobrancaRecorrenteMethods
     {
-        return new CobrancaRecorrenteMethods($this->client('pix_automatico_rec'), $this->integration);
+        return new CobrancaRecorrenteMethods($this->client('pix_automatico_rec'), $this->integration, ItauHosts::resolve('pix_automatico_rec', $this->integration));
     }
 
     public function qrCode(): QrCodeMethods
     {
-        return new QrCodeMethods($this->client('pix_automatico_qr'), $this->integration);
+        return new QrCodeMethods($this->client('pix_automatico_qr'), $this->integration, ItauHosts::resolve('pix_automatico_qr', $this->integration));
     }
 
     private function client(string $product): \Illuminate\Http\Client\PendingRequest

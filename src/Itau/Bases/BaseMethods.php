@@ -25,6 +25,12 @@ abstract class BaseMethods
     public function __construct(
         PendingRequest $httpClient,
         protected BankIntegration $integration,
+        /**
+         * Host do PRODUTO desta collection. Guardado porque o retry de 401/403
+         * RECRIA o client — e sem ele a segunda tentativa cai no host default.
+         * Ver o comentario no retry abaixo.
+         */
+        protected ?string $baseUrl = null,
     ) {
         $this->httpClient = $httpClient;
     }
@@ -53,8 +59,17 @@ abstract class BaseMethods
 
         // 401/403: token pode ter expirado no servidor antes do nosso expires_in;
         // reconstrói o client (força reautenticação) e tenta 1x.
+        //
+        // ⚠️ O $this->baseUrl PRECISA ser repassado. O Itau publica cada produto
+        // num subdominio proprio (account-statement.api.itau.com,
+        // pix-pj.api.itau.com…), e `HttpClientFactory::make()` sem baseUrl cai
+        // no host DEFAULT (api.itau.com.br). Sem isso o retry trocava o host no
+        // meio do caminho: a 1a tentativa batia certo e voltava 403 (sem
+        // permissao), a 2a ia pro host errado e voltava 404 — o erro que chegava
+        // ao chamador era "endpoint nao existe", escondendo que o problema real
+        // era PERMISSAO. Diagnosticado no extrato Itau em 01/09/2026.
         if (in_array($response->status(), [401, 403], true) && $retryAttempt === 0) {
-            $this->httpClient = HttpClientFactory::make($this->integration);
+            $this->httpClient = HttpClientFactory::make($this->integration, $this->baseUrl);
 
             return $this->makeRequest($method, $apiPath, $query, $body, $retryAttempt + 1);
         }

@@ -23,12 +23,12 @@ final class SaqueTroco
 
     public function pontos(): PontosAtendimentoMethods
     {
-        return new PontosAtendimentoMethods($this->client(), $this->integration);
+        return new PontosAtendimentoMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     public function remuneracao(): RemuneracaoMethods
     {
-        return new RemuneracaoMethods($this->client(), $this->integration);
+        return new RemuneracaoMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     private function client(): PendingRequest

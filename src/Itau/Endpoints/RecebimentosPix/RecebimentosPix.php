@@ -22,38 +22,38 @@ final class RecebimentosPix
 
     public function cobImediata(): CobrancaImediataMethods
     {
-        return new CobrancaImediataMethods($this->client(), $this->integration);
+        return new CobrancaImediataMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     public function cobVencimento(): CobrancaVencimentoMethods
     {
-        return new CobrancaVencimentoMethods($this->client(), $this->integration);
+        return new CobrancaVencimentoMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     public function pixRecebido(): PixRecebidoMethods
     {
-        return new PixRecebidoMethods($this->client(), $this->integration);
+        return new PixRecebidoMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     public function location(): LocationMethods
     {
-        return new LocationMethods($this->client(), $this->integration);
+        return new LocationMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     public function webhook(): WebhookMethods
     {
-        return new WebhookMethods($this->client(), $this->integration);
+        return new WebhookMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     public function loteCobV(): LoteCobrancaVencimentoMethods
     {
-        return new LoteCobrancaVencimentoMethods($this->client(), $this->integration);
+        return new LoteCobrancaVencimentoMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     /** Resolvedores públicos de payload de QR (GET /qr, /qr/cobv). */
     public function qrCode(): QrCodeMethods
     {
-        return new QrCodeMethods($this->client(), $this->integration);
+        return new QrCodeMethods($this->client(), $this->integration, ItauHosts::resolve('pix_recebimentos', $this->integration));
     }
 
     private function client(): PendingRequest

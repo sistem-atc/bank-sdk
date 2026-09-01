@@ -22,22 +22,22 @@ final class Boletos
 
     public function emissao(): BoletosMethods
     {
-        return new BoletosMethods($this->client('default'), $this->integration);
+        return new BoletosMethods($this->client('default'), $this->integration, ItauHosts::resolve('default', $this->integration));
     }
 
     public function instrucao(): BoletosInstrucaoMethods
     {
-        return new BoletosInstrucaoMethods($this->client('default'), $this->integration);
+        return new BoletosInstrucaoMethods($this->client('default'), $this->integration, ItauHosts::resolve('default', $this->integration));
     }
 
     public function consulta(): BoletosConsultaMethods
     {
-        return new BoletosConsultaMethods($this->client('boletos_consulta'), $this->integration);
+        return new BoletosConsultaMethods($this->client('boletos_consulta'), $this->integration, ItauHosts::resolve('boletos_consulta', $this->integration));
     }
 
     public function extrato(): BoletosExtratoMethods
     {
-        return new BoletosExtratoMethods($this->client('boletos_extrato'), $this->integration);
+        return new BoletosExtratoMethods($this->client('boletos_extrato'), $this->integration, ItauHosts::resolve('boletos_extrato', $this->integration));
     }
 
     /**
@@ -46,7 +46,7 @@ final class Boletos
      */
     public function notificacoes(): BoletosNotificacaoMethods
     {
-        return new BoletosNotificacaoMethods($this->client('boletos_v3'), $this->integration);
+        return new BoletosNotificacaoMethods($this->client('boletos_v3'), $this->integration, ItauHosts::resolve('boletos_v3', $this->integration));
     }
 
     private function client(string $product): \Illuminate\Http\Client\PendingRequest
