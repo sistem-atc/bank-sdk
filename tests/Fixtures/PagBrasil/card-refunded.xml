@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<request>
+<order>1234567890</order>
+<payment_method>C</payment_method>
+<submission_date>10/12/2010</submission_date>
+<order_status>RP</order_status>
+<payment_date>10/12/2010</payment_date>
+<product_name>Product Test (1 license)</product_name>
+<customer_name>José da Silva</customer_name>
+<customer_taxid>91051605962</customer_taxid>
+<customer_email>josedasilva@myemail.com.br</customer_email>
+<customer_phone>11 3328.9999</customer_phone>
+<address_street>Av.Paulista, 100</address_street>
+<address_zip>01311100</address_zip>
+<address_city>São Paulo</address_city>
+<address_state>SP</address_state>
+<amount_brl>39.50</amount_brl>
+<amount_paid>39.50</amount_paid>
+<cc_installments>1</cc_installments>
+<cc_brand>V</cc_brand>
+<cc_holder>joao da silva</cc_holder>
+<cc_number>498412******1234</cc_number>
+<cc_expiration>12/29</cc_expiration>
+<amount_refunded>39.50</amount_refunded>
+<refund_date>10/30/2010</refund_date>
+<soft_descriptor>TEST</soft_descriptor>
+<signature>44c0eb7fd06dc698cdf7df2f8beaa2fb</signature>
+</request>

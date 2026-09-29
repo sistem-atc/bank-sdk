@@ -1,6 +1,6 @@
 {
     "name": "sistem-atc/bank-sdk",
-    "description": "Pacote unificado de integração bancária (Bradesco, Itaú) — Open Banking, DDA, extrato, PIX/pagamentos e CNAB 240/400",
+    "description": "Pacote unificado de integração bancária (Bradesco, Itaú) e do gateway PagBrasil — Open Banking, DDA, extrato, PIX/pagamentos, CNAB 240/400, cobranças, assinaturas e webhooks PagBrasil",
     "type": "library",
     "license": "MIT",
     "autoload": {

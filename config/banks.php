@@ -152,4 +152,27 @@ return [
         ],
     ],
 
+    'pagbrasil' => [
+        // Hosts da PagBrasil — são DA PAGBRASIL (iguais pra toda empresa),
+        // por isso moram no SDK. Quem escolhe o ambiente é a integração
+        // (isSandbox(), cadastro no host); o env só sobrescreve a URL.
+        // Produção confirmada pelo contrato da conta (connect.pagbrasil.com);
+        // o sandbox é o publicado na documentação.
+        //
+        // Um host só serve todas as APIs: a clássica (/api/order/*,
+        // /api/checkout/add, /api/pix/*, /api/payout/, /api/oauth/token), a
+        // REST do PagStream (/api/v2/pagstream/*) e os mocks de sandbox
+        // (/mock/*).
+        'base_url' => [
+            'production' => env('PAGBRASIL_BASE_URL', 'https://connect.pagbrasil.com'),
+            'sandbox' => env('PAGBRASIL_BASE_URL_SANDBOX', 'https://sandbox.pagbrasil.com'),
+        ],
+
+        // Confere o HMAC-MD5 (`signature`) das respostas da API clássica
+        // quando a integração tem signature key. Divergência vira
+        // PagBrasilSignatureException. IPN/webhook é sempre conferido — ver
+        // PagBrasil\Webhooks\WebhookVerifier.
+        'verify_response_signature' => (bool) env('PAGBRASIL_VERIFY_RESPONSE_SIGNATURE', true),
+    ],
+
 ];

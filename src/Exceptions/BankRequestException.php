@@ -18,11 +18,19 @@ class BankRequestException extends RuntimeException
         private readonly Response $response,
         public readonly string $bank = '',
     ) {
-        $body = $response->json() ?? [];
-        $detail = $body['message']
-            ?? $body['error_description']
-            ?? $body['error']
-            ?? ('HTTP '.$response->status());
+        $body = $response->json();
+        $body = is_array($body) ? $body : [];
+
+        // Só texto vira mensagem: há API que manda `error` como OBJETO
+        // ({"error": {"code": …}}, ex.: PagStream da PagBrasil) — interpolar
+        // isso estourava "Array to string conversion" dentro da exceção.
+        $detail = 'HTTP '.$response->status();
+        foreach (['message', 'error_description', 'error'] as $key) {
+            if (isset($body[$key]) && is_scalar($body[$key]) && (string) $body[$key] !== '') {
+                $detail = (string) $body[$key];
+                break;
+            }
+        }
 
         parent::__construct("[{$bank}] {$detail}", $response->status());
     }

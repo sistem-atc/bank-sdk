@@ -27,6 +27,13 @@ use SistemAtc\Banks\Itau\Endpoints\PixAutomatico\PixAutomatico;
 use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\RecebimentosPix;
 use SistemAtc\Banks\Itau\Endpoints\SaqueTroco\SaqueTroco;
 use SistemAtc\Banks\Itau\Itau;
+use SistemAtc\Banks\PagBrasil\Endpoints\Checkout\CheckoutMethods;
+use SistemAtc\Banks\PagBrasil\Endpoints\Orders\OrderMethods;
+use SistemAtc\Banks\PagBrasil\Endpoints\PagStream\PagStream as PagBrasilPagStream;
+use SistemAtc\Banks\PagBrasil\Endpoints\Payout\PayoutMethods;
+use SistemAtc\Banks\PagBrasil\Endpoints\PixAutomatico\PixAutomaticoMethods as PagBrasilPixAutomatico;
+use SistemAtc\Banks\PagBrasil\PagBrasil;
+use SistemAtc\Banks\PagBrasil\Webhooks\WebhookVerifier;
 use SistemAtc\Banks\Support\AuthToken;
 
 /**
@@ -42,6 +49,10 @@ use SistemAtc\Banks\Support\AuthToken;
  * de fachada delegam. Como cada método é tipado pela INTERFACE de domínio,
  * trocar `Bradesco` por `Itau` não muda o código do consumidor.
  *
+ * `Bank::PagBrasil` é um GATEWAY de pagamento, não um banco: mesma fachada,
+ * mas sem extrato/DDA/SISPAG — expõe pedidos(), linkPagamento(),
+ * pixAutomatico(), payout(), pagStream() e webhook().
+ *
  * Sobre `$integration`: banco não tem "sessão de usuário" — a identidade é o
  * app (client_id/secret) + o certificado mTLS da empresa. Esses dados chegam
  * pela implementação de BankIntegration que o host passa em cada chamada,
@@ -51,6 +62,7 @@ enum Bank
 {
     case Bradesco;
     case Itau;
+    case PagBrasil;
 
     /** Resolve o connector concreto do banco. */
     public function connector(): BankConnector
@@ -58,15 +70,22 @@ enum Bank
         return match ($this) {
             self::Bradesco => new Bradesco(),
             self::Itau => new Itau(),
+            self::PagBrasil => new PagBrasil(),
         };
     }
 
-    /** Código de compensação FEBRABAN (útil pro CNAB e conciliação). */
+    /**
+     * Código de compensação FEBRABAN (útil pro CNAB e conciliação). A
+     * PagBrasil é gateway, não banco compensado: sem código, erro explícito.
+     */
     public function code(): string
     {
         return match ($this) {
             self::Bradesco => '237',
             self::Itau => '341',
+            self::PagBrasil => throw new BadMethodCallException(
+                'PagBrasil: gateway de pagamento, não tem código de compensação FEBRABAN.'
+            ),
         };
     }
 
@@ -114,9 +133,17 @@ enum Bank
         return $this->itau(__FUNCTION__)->recebimentosPix($integration);
     }
 
-    /** Pix Automático — recorrência, cobrança recorrente e QR Code. */
-    public function pixAutomatico(BankIntegration $integration): PixAutomatico
+    /**
+     * Pix Automático — recorrência, cobrança recorrente e QR Code. Existe no
+     * Itaú (API Bacen) e na PagBrasil (API própria); o tipo de retorno segue
+     * o case.
+     */
+    public function pixAutomatico(BankIntegration $integration): PixAutomatico|PagBrasilPixAutomatico
     {
+        if ($this === self::PagBrasil) {
+            return $this->pagBrasil(__FUNCTION__)->pixAutomatico($integration);
+        }
+
         return $this->itau(__FUNCTION__)->pixAutomatico($integration);
     }
 
@@ -210,6 +237,52 @@ enum Bank
         if (! $connector instanceof Bradesco) {
             throw new BadMethodCallException(
                 "{$this->name}: o domínio '{$domain}' é exclusivo do Bradesco e não está disponível neste banco."
+            );
+        }
+
+        return $connector;
+    }
+
+    // ── Produtos da PagBrasil (gateway de pagamento) ────────────────────────
+
+    /** Pedidos: cartão, Débito Flash, boleto e Pix — criar, consultar, estornar, cancelar. */
+    public function pedidos(BankIntegration $integration): OrderMethods
+    {
+        return $this->pagBrasil(__FUNCTION__)->pedidos($integration);
+    }
+
+    /** Link de Pagamento (checkout hospedado pela PagBrasil). */
+    public function linkPagamento(BankIntegration $integration): CheckoutMethods
+    {
+        return $this->pagBrasil(__FUNCTION__)->linkPagamento($integration);
+    }
+
+    /** Payout — favorecidos e envio de valores. */
+    public function payout(BankIntegration $integration): PayoutMethods
+    {
+        return $this->pagBrasil(__FUNCTION__)->payout($integration);
+    }
+
+    /** PagStream — assinaturas recorrentes. */
+    public function pagStream(BankIntegration $integration): PagBrasilPagStream
+    {
+        return $this->pagBrasil(__FUNCTION__)->pagStream($integration);
+    }
+
+    /** Autentica e interpreta IPNs/webhooks recebidos. */
+    public function webhook(BankIntegration $integration): WebhookVerifier
+    {
+        return $this->pagBrasil(__FUNCTION__)->webhook($integration);
+    }
+
+    /** Garante que o case é PagBrasil antes de delegar um produto exclusivo dela. */
+    private function pagBrasil(string $domain): PagBrasil
+    {
+        $connector = $this->connector();
+
+        if (! $connector instanceof PagBrasil) {
+            throw new BadMethodCallException(
+                "{$this->name}: o domínio '{$domain}' é exclusivo da PagBrasil e não está disponível neste banco."
             );
         }
 

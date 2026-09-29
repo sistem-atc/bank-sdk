@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<request>
+<order>1234567890</order>
+<payment_method>B</payment_method>
+<submission_date>10/12/2010</submission_date>
+<url_boleto>https://pagbrasil.com/b?b3b4cj7rf</url_boleto>
+<order_status>PC</order_status>
+<payment_date>10/15/2010</payment_date>
+<product_name>Product Test (1 license)</product_name>
+<customer_name>José da Silva</customer_name>
+<customer_taxid>91051605962</customer_taxid>
+<customer_email>josedasilva@myemail.com.br</customer_email>
+<customer_phone>11 3328.9999</customer_phone>
+<address_street>Av.Paulista, 100</address_street>
+<address_zip>01311100</address_zip>
+<address_city>São Paulo</address_city>
+<address_state>SP</address_state>
+<amount_brl>39.50</amount_brl>
+<amount_paid>39.50</amount_paid>
+<signature>0c0372d38364f2a6d31ec61b0054ff32</signature>
+</request>
