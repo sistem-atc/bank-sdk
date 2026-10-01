@@ -83,6 +83,15 @@ abstract class FormMethods
         $this->lastResponse = $response;
         $parsed = ParsedResponse::parse($response->body());
 
+        // A PRODUÇÃO usa 4xx com corpo de verdade: pedido inexistente volta
+        // 412 com `<request></request>` — o mesmo corpo que a doc documenta
+        // com 200 (visto em connect.pagbrasil.com, 01/10/2026). Corpo
+        // estruturado (XML/JSON) vai pro endpoint decidir; só texto e 5xx são
+        // erro aqui ("Invalid access." = credencial recusada).
+        if ($response->clientError() && ! $parsed->isText()) {
+            return $parsed;
+        }
+
         if ($response->failed()) {
             $this->fail($response, $parsed->isText() && $parsed->text() !== ''
                 ? $parsed->text()

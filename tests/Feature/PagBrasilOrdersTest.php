@@ -177,3 +177,21 @@ it('cancela, apaga cartão salvo e gera o 1-Click Pix', function () {
         ->and(pbOrders($integration)->excluirCartaoSalvo('123456', '52998224725'))->toBe('Credit card information successfully deleted')
         ->and(pbOrders($integration)->pixUmClique('1')->urlPayment)->toBe('https://pay.example/1click');
 });
+
+it('produção devolve "não encontrado" com HTTP 412 — consulta dá null, não erro', function () {
+    // Visto em connect.pagbrasil.com (01/10/2026): pedido inexistente vem com
+    // status 412 e o MESMO corpo que a doc documenta com 200.
+    Http::fake(['*/api/order/get' => Http::response("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<request>\n</request>", 412)]);
+
+    expect(pbOrders()->consultar('142661'))->toBeNull();
+});
+
+it('412 com estrutura de pedido devolve o pedido; 412 em texto continua erro (credencial recusada)', function () {
+    Http::fakeSequence('*/api/order/get')
+        ->push(pbXml('boleto-paid.xml'), 412)
+        ->push('Invalid access.', 412);
+
+    expect(pbOrders()->consultar('1234567890')?->urlBoleto)->toBe('https://pagbrasil.com/b?b3b4cj7rf');
+    expect(fn () => pbOrders()->consultar('1234567890'))
+        ->toThrow(PagBrasilRequestException::class, 'Invalid access.');
+});

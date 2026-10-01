@@ -158,6 +158,10 @@ Pontos que não estão óbvios na doc da PagBrasil:
 - **Erro da API clássica vem em texto com HTTP 200** ("Duplicated order.").
   O SDK converte em `PagBrasilRequestException`. No PagStream, o erro vem no
   envelope `{"error":{code,…}}`, e o `errorCode` fica exposto na exceção.
+- **Produção usa 4xx com corpo válido.** Pedido inexistente volta HTTP 412 com
+  `<request></request>` (a doc diz 200). O SDK deixa corpo XML/JSON seguir pro
+  endpoint (`consultar()` devolve `null`); 412 em texto (`Invalid access.`) é
+  credencial recusada.
 - **Sem retry em escrita.** Sem resposta do `order/add`, consulte antes de
   reenviar (a doc alerta para cobrança duplicada). Só as leituras repetem.
 - **DTOs de request** (`PagBrasil\DTO\Request\*`) normalizam na entrada:
