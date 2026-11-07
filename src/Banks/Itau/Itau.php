@@ -25,8 +25,7 @@ use SistemAtc\Banks\Support\AuthToken;
 /**
  * Connector Itaú. Cada método de domínio monta um cliente HTTP autenticado
  * (token válido + mTLS + headers do gateway) no HOST do produto e devolve o
- * grupo de métodos. Domínios comuns via `Bank::Itau`; produtos específicos
- * direto aqui: `Itau::make()->boletos($i)`.
+ * grupo de métodos: `Itau::make()->statement($i)`, `Itau::make()->boletos($i)`.
  *
  * Domínios comuns (do BankConnector): auth, statement, pix, payments.
  * Produtos específicos do Itaú (fora da interface cross-bank): boletos,

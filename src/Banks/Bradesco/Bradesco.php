@@ -25,8 +25,7 @@ use SistemAtc\Banks\Support\AuthToken;
 /**
  * Connector Bradesco. Cada método monta um cliente HTTP autenticado no host e
  * autorizador da FAMÍLIA do produto (open_api ou pix) e devolve o grupo de
- * métodos. Domínios comuns via `Bank::Bradesco`; produtos específicos direto
- * aqui: `Bradesco::make()->cobranca($i)`.
+ * métodos: `Bradesco::make()->statement($i)`, `Bradesco::make()->cobranca($i)`.
  *
  * Domínios comuns (BankConnector): auth, statement, pix, payments — apontam
  * para as implementações reais, o que mantém Bradesco e Itaú intercambiáveis.
