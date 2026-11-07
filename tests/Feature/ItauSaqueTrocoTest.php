@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Itau\Endpoints\SaqueTroco\PontosAtendimentoMethods;
-use SistemAtc\Banks\Itau\Endpoints\SaqueTroco\RemuneracaoMethods;
-use SistemAtc\Banks\Itau\DTO\Response\SaqueTroco\PontoAtendimento;
-use SistemAtc\Banks\Itau\DTO\Response\SaqueTroco\PontosAtendimentoList;
-use SistemAtc\Banks\Itau\DTO\Response\SaqueTroco\RemuneracaoList;
-use SistemAtc\Banks\Itau\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Itau\Endpoints\SaqueTroco\PontosAtendimentoMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\SaqueTroco\RemuneracaoMethods;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\SaqueTroco\PontoAtendimento;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\SaqueTroco\PontosAtendimentoList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\SaqueTroco\RemuneracaoList;
+use SistemAtc\Banks\Banks\Itau\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function saqueTrocoAuthed(): FakeBankIntegration

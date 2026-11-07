@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Banks\Itau\Itau;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function itauRetryIntegration(): FakeBankIntegration
@@ -47,7 +47,7 @@ it('o retry de 403 mantem o host do produto, e nao cai no host default', functio
     });
 
     try {
-        Bank::Itau->statement($integration)->saldos();
+        Itau::make()->statement($integration)->saldos();
     } catch (\Throwable) {
         // O que importa aqui e' PRA ONDE as chamadas foram.
     }
@@ -71,7 +71,7 @@ it('o erro que chega ao chamador e o 403 real, nao um 404 do host errado', funct
     $status = null;
 
     try {
-        Bank::Itau->statement($integration)->saldos();
+        Itau::make()->statement($integration)->saldos();
     } catch (\SistemAtc\Banks\Exceptions\BankRequestException $e) {
         $status = $e->status();
     }

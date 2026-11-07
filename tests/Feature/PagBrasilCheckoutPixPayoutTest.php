@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
 use SistemAtc\Banks\Exceptions\PagBrasilRequestException;
-use SistemAtc\Banks\PagBrasil\DTO\Response\ApiResult;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Payout\Payee;
-use SistemAtc\Banks\PagBrasil\Endpoints\PixAutomatico\PixAutomaticoMethods;
-use SistemAtc\Banks\PagBrasil\Enums\RecurrenceCycle;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\ApiResult;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Payout\Payee;
+use SistemAtc\Banks\Gateways\PagBrasil\Endpoints\PixAutomatico\PixAutomaticoMethods;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\RecurrenceCycle;
 use SistemAtc\Banks\Tests\Fakes\FakePagBrasilIntegration;
 
 function pbNoKey(bool $sandbox = true): FakePagBrasilIntegration
@@ -22,7 +22,7 @@ it('cria Link de Pagamento e devolve a url_payment do XML', function () {
         '<?xml version="1.0" encoding="ISO-8859-1"?><request><url_payment>https://pagbrasil.com/l?abc</url_payment></request>'
     )]);
 
-    $link = Bank::PagBrasil->linkPagamento(pbNoKey())->criar([
+    $link = PagBrasil::make()->linkPagamento(pbNoKey())->criar([
         'order' => 'PL-1',
         'amount_brl' => '120.00',
         'payment_option' => 'C,X',
@@ -36,12 +36,12 @@ it('cria Link de Pagamento e devolve a url_payment do XML', function () {
 it('Link de Pagamento sem XML válido é erro', function () {
     Http::fake(['*/api/checkout/add' => Http::response('Invalid amount_brl')]);
 
-    expect(fn () => Bank::PagBrasil->linkPagamento(pbNoKey())->criar(['order' => '1', 'amount_brl' => 'x']))
+    expect(fn () => PagBrasil::make()->linkPagamento(pbNoKey())->criar(['order' => '1', 'amount_brl' => 'x']))
         ->toThrow(PagBrasilRequestException::class, 'Invalid amount_brl');
 });
 
 it('pixAutomatico() da PagBrasil devolve os métodos da PagBrasil', function () {
-    expect(Bank::PagBrasil->pixAutomatico(pbNoKey()))->toBeInstanceOf(PixAutomaticoMethods::class);
+    expect(PagBrasil::make()->pixAutomatico(pbNoKey()))->toBeInstanceOf(PixAutomaticoMethods::class);
 });
 
 it('Pix Automático: pagamento+consentimento, só consentimento e cobrança recorrente', function () {
@@ -53,7 +53,7 @@ it('Pix Automático: pagamento+consentimento, só consentimento e cobrança reco
         '*/api/pix/rec/add' => Http::response($xml),
     ]);
 
-    $pix = Bank::PagBrasil->pixAutomatico(pbNoKey());
+    $pix = PagBrasil::make()->pixAutomatico(pbNoKey());
 
     expect($pix->pagamentoComConsentimento(['order' => 'R1', 'pix_rec_cycle' => RecurrenceCycle::Monthly, 'pix_rec_retry' => true])->pixRecId)->toBe('rec123')
         ->and($pix->consentimento(['payer_name' => 'Ana', 'payer_taxid' => '52998224725', 'pix_rec_cycle' => 'monthly'])->pixCode)->toBe('000201')
@@ -71,7 +71,7 @@ it('consulta recorrência aceitando a grafia pic_rec_expiration da doc', functio
         .'<pic_rec_expiration>2027-12-31</pic_rec_expiration><pix_rec_minimum_amount>10.00</pix_rec_minimum_amount></request>'
     )]);
 
-    $rec = Bank::PagBrasil->pixAutomatico(pbNoKey())->consultarRecorrencia('rec123');
+    $rec = PagBrasil::make()->pixAutomatico(pbNoKey())->consultarRecorrencia('rec123');
 
     expect($rec->isAuthorized())->toBeTrue()
         ->and($rec->cycle())->toBe(RecurrenceCycle::Monthly)
@@ -81,7 +81,7 @@ it('consulta recorrência aceitando a grafia pic_rec_expiration da doc', functio
 it('retentativa devolve a resposta crua (formato não documentado)', function () {
     Http::fake(['*/api/pix/rec/retry' => Http::response('Retry scheduled')]);
 
-    $res = Bank::PagBrasil->pixAutomatico(pbNoKey())->retentar('R2');
+    $res = PagBrasil::make()->pixAutomatico(pbNoKey())->retentar('R2');
 
     expect($res)->toBeInstanceOf(ApiResult::class)->and($res->message)->toBe('Retry scheduled');
 });
@@ -89,9 +89,9 @@ it('retentativa devolve a resposta crua (formato não documentado)', function ()
 it('emulador de cobranças só no sandbox', function () {
     Http::fake(['*/mock/pix/automatic/chargeRecurrences' => Http::response('Charges processed.')]);
 
-    expect(Bank::PagBrasil->pixAutomatico(pbNoKey())->emularCobrancas('2026-10-18'))->toBe('Charges processed.');
+    expect(PagBrasil::make()->pixAutomatico(pbNoKey())->emularCobrancas('2026-10-18'))->toBe('Charges processed.');
 
-    expect(fn () => Bank::PagBrasil->pixAutomatico(pbNoKey(sandbox: false))->emularCobrancas('2026-10-18'))
+    expect(fn () => PagBrasil::make()->pixAutomatico(pbNoKey(sandbox: false))->emularCobrancas('2026-10-18'))
         ->toThrow(BadMethodCallException::class);
 });
 
@@ -102,7 +102,7 @@ it('Payout: cadastra/consulta favorecido e envia payout', function () {
             .'<bank>341</bank><status>1</status><name>José</name></payee></request>')
         ->push(['action' => 'addpayout', 'success' => true, 'id' => '9876']);
 
-    $payout = Bank::PagBrasil->payout(pbNoKey());
+    $payout = PagBrasil::make()->payout(pbNoKey());
 
     expect($payout->cadastrarFavorecido(['payee_name' => 'José', 'payee_taxid' => '91051605962'])->success)->toBeTrue();
 
@@ -123,6 +123,6 @@ it('Payout com success=false vira exceção com as mensagens de erro', function 
         'action' => 'addpayee', 'success' => 'false', 'error_message' => 'Invalid payee_bank;Invalid payee_zip',
     ])]);
 
-    expect(fn () => Bank::PagBrasil->payout(pbNoKey())->cadastrarFavorecido(['payee_taxid' => '1']))
+    expect(fn () => PagBrasil::make()->payout(pbNoKey())->cadastrarFavorecido(['payee_taxid' => '1']))
         ->toThrow(PagBrasilRequestException::class, 'Invalid payee_bank;Invalid payee_zip');
 });

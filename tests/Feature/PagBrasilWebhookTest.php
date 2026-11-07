@@ -2,26 +2,26 @@
 
 declare(strict_types=1);
 
-use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
 use SistemAtc\Banks\Exceptions\PagBrasilSignatureException;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\BoletosPaidNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\ConsentNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\LegacySubscriptionNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\PayeeNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\PaymentNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\PayoutNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\ProductNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\ShippingCanceledNotification;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Webhooks\SubscriptionNotification;
-use SistemAtc\Banks\PagBrasil\Enums\PaymentStatus;
-use SistemAtc\Banks\PagBrasil\Enums\SubscriptionStatus;
-use SistemAtc\Banks\PagBrasil\Support\Signature;
-use SistemAtc\Banks\PagBrasil\Webhooks\WebhookVerifier;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\BoletosPaidNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\ConsentNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\LegacySubscriptionNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\PayeeNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\PaymentNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\PayoutNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\ProductNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\ShippingCanceledNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Webhooks\SubscriptionNotification;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\PaymentStatus;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\SubscriptionStatus;
+use SistemAtc\Banks\Gateways\PagBrasil\Support\Signature;
+use SistemAtc\Banks\Gateways\PagBrasil\Webhooks\WebhookVerifier;
 use SistemAtc\Banks\Tests\Fakes\FakePagBrasilIntegration;
 
 function pbWebhook(?string $key = FakePagBrasilIntegration::DOC_KEY): WebhookVerifier
 {
-    return Bank::PagBrasil->webhook(new FakePagBrasilIntegration(signatureKey: $key));
+    return PagBrasil::make()->webhook(new FakePagBrasilIntegration(signatureKey: $key));
 }
 
 /** Assina um webhook genérico como a PagBrasil (valores escalares menos secret/pbtoken). */

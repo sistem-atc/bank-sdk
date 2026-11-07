@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use SistemAtc\Banks\Itau\Support\ItauHosts;
-use SistemAtc\Banks\Itau\Support\OAuth;
+use SistemAtc\Banks\Banks\Itau\Support\ItauHosts;
+use SistemAtc\Banks\Banks\Itau\Support\OAuth;
 use SistemAtc\Banks\Support\Environment;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 

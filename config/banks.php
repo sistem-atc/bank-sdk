@@ -152,6 +152,44 @@ return [
         ],
     ],
 
+    'inter' => [
+        // Banco Inter PJ ("APIs Inter Empresas"). Um host só por ambiente
+        // serve token e todas as APIs; cada API prefixa o próprio path
+        // (/oauth/v2, /banking/v2, /cobranca/v3, /pix/v2). Hosts confirmados
+        // nas specs OpenAPI oficiais do portal developers.inter.co.
+        //
+        // Produção E sandbox exigem mTLS: o par .crt + .key baixado na tela
+        // de integrações do Internet Banking (ver ClientCertificate, formato PEM).
+        'base_url' => [
+            'production' => env('INTER_BASE_URL', 'https://cdpj.partners.bancointer.com.br'),
+            'sandbox' => env('INTER_BASE_URL_SANDBOX', 'https://cdpj-sandbox.partners.uatinter.co'),
+        ],
+        'oauth_path' => env('INTER_OAUTH_PATH', '/oauth/v2/token'),
+
+        // O token do Inter vale 1h e o endpoint de token aceita só 5 chamadas
+        // por minuto (produção e sandbox). Por isso o SDK pede UM token com
+        // todos os escopos da integração e o reaproveita até expirar.
+        'token_safety_margin' => (int) env('INTER_TOKEN_MARGIN', 120),
+
+        // Escopos pedidos no token quando a integração não declara os seus em
+        // settings['scopes']. O Inter recusa escopo que não foi marcado na
+        // tela da aplicação, então o host deve informar só os que o app tem.
+        'scopes' => [
+            'extrato.read',
+            'pagamento-boleto.read', 'pagamento-boleto.write',
+            'pagamento-darf.write',
+            'pagamento-lote.read', 'pagamento-lote.write',
+            'pagamento-pix.read', 'pagamento-pix.write',
+            'webhook-banking.read', 'webhook-banking.write',
+            'boleto-cobranca.read', 'boleto-cobranca.write',
+            'cob.read', 'cob.write', 'cobv.read', 'cobv.write',
+            'lotecobv.read', 'lotecobv.write',
+            'payloadlocation.read', 'payloadlocation.write',
+            'pix.read', 'pix.write',
+            'webhook.read', 'webhook.write',
+        ],
+    ],
+
     'pagbrasil' => [
         // Hosts da PagBrasil — são DA PAGBRASIL (iguais pra toda empresa),
         // por isso moram no SDK. Quem escolhe o ambiente é a integração

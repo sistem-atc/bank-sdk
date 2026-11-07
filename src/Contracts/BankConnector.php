@@ -11,8 +11,10 @@ use SistemAtc\Banks\Contracts\Endpoints\StatementEndpoint;
 use SistemAtc\Banks\Support\AuthToken;
 
 /**
- * Contrato que cada banco (Bradesco, Itaú) implementa. É o alvo por trás da
- * fachada enum `Bank`: `Bank::Bradesco` resolve pra um BankConnector e delega.
+ * Contrato que cada banco (Bradesco, Itaú, Inter) implementa. O enum `Bank`
+ * só resolve o connector (`Bank::Itau->connector()`); a regra de cada domínio
+ * é da classe do banco. Produtos específicos de cada banco ficam SÓ no connector concreto
+ * (`Itau::make()->boletos(...)`), nunca neste contrato nem no enum.
  *
  * Cada método de domínio recebe a integração da empresa e devolve o grupo de
  * métodos daquele domínio, tipado pela INTERFACE comum — é isso que torna os
@@ -20,6 +22,11 @@ use SistemAtc\Banks\Support\AuthToken;
  */
 interface BankConnector
 {
+    public static function make(): self;
+
+    /** Código de compensação FEBRABAN (ex.: '237', '341'). */
+    public function code(): string;
+
     /** Autentica (client_credentials + mTLS) e devolve o token vigente. */
     public function auth(BankIntegration $integration): AuthToken;
 

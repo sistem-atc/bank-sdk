@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Checkout\PaymentLink;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Common\Address;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Common\Customer;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Common\Product;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Common\RefundPixKey;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Orders\CardOrder;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Orders\PixOrder;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Orders\Refund;
-use SistemAtc\Banks\PagBrasil\DTO\Request\PagStream\Cancellation;
-use SistemAtc\Banks\PagBrasil\DTO\Request\PagStream\RecurrenceItem;
-use SistemAtc\Banks\PagBrasil\DTO\Request\PagStream\ShippingChange;
-use SistemAtc\Banks\PagBrasil\DTO\Request\PagStream\ShippingsUpdate;
-use SistemAtc\Banks\PagBrasil\DTO\Request\PagStream\SubscriptionFilter;
-use SistemAtc\Banks\PagBrasil\DTO\Request\Payout\PayeeData;
-use SistemAtc\Banks\PagBrasil\Enums\CancellationOption;
-use SistemAtc\Banks\PagBrasil\Enums\PaymentMethod;
-use SistemAtc\Banks\PagBrasil\Enums\PixKeyType;
+use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Checkout\PaymentLink;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Common\Address;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Common\Customer;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Common\Product;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Common\RefundPixKey;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Orders\CardOrder;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Orders\PixOrder;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Orders\Refund;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\PagStream\Cancellation;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\PagStream\RecurrenceItem;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\PagStream\ShippingChange;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\PagStream\ShippingsUpdate;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\PagStream\SubscriptionFilter;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Request\Payout\PayeeData;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\CancellationOption;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\PaymentMethod;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\PixKeyType;
 use SistemAtc\Banks\Tests\Fakes\FakePagBrasilIntegration;
 
 function pbDtoIntegration(): FakePagBrasilIntegration
@@ -42,7 +42,7 @@ function pbDtoPix(): PixOrder
 it('pedido Pix por DTO vira o form da API clássica', function () {
     Http::fake(['*/api/order/add' => Http::response('<request><order>PED-9</order><order_status>WP</order_status><pix_code>000201</pix_code></request>')]);
 
-    $order = Bank::PagBrasil->pedidos(pbDtoIntegration())->pix(pbDtoPix());
+    $order = PagBrasil::make()->pedidos(pbDtoIntegration())->pix(pbDtoPix());
 
     expect($order->pixCode)->toBe('000201');
     Http::assertSent(fn (Request $r) => $r->isForm()
@@ -56,7 +56,7 @@ it('cartão por DTO: cc_save vira "0" no form', function () {
     Http::fake(['*/api/order/add' => Http::response('<request><order>C1</order><order_status>PC</order_status></request>')]);
 
     $pix = pbDtoPix();
-    Bank::PagBrasil->pedidos(pbDtoIntegration())->cartao(new CardOrder(
+    PagBrasil::make()->pedidos(pbDtoIntegration())->cartao(new CardOrder(
         'C1', 'Whey', $pix->products, $pix->customer, $pix->address, 129.9, previousOrder: 'C0',
     ));
 
@@ -67,7 +67,7 @@ it('cartão por DTO: cc_save vira "0" no form', function () {
 it('estorno por DTO e pela forma curta com destino tipado', function () {
     Http::fake(['*/api/order/refund' => Http::response('Refund request received')]);
 
-    $orders = Bank::PagBrasil->pedidos(pbDtoIntegration());
+    $orders = PagBrasil::make()->pedidos(pbDtoIntegration());
     $orders->estornar(new Refund('P1', 10, new RefundPixKey(PixKeyType::Email, 'a@b.com')));
     $orders->estornar('P2', '5.00', new RefundPixKey(PixKeyType::Phone, '11999990000'));
 
@@ -83,13 +83,13 @@ it('link de pagamento e favorecido por DTO', function () {
         '*/api/payout/' => Http::response(['action' => 'addpayee', 'success' => true]),
     ]);
 
-    expect(Bank::PagBrasil->linkPagamento(pbDtoIntegration())->criar(new PaymentLink('L1', 50, paymentOptions: [PaymentMethod::Pix]))->urlPayment)
+    expect(PagBrasil::make()->linkPagamento(pbDtoIntegration())->criar(new PaymentLink('L1', 50, paymentOptions: [PaymentMethod::Pix]))->urlPayment)
         ->toBe('https://pay/x');
 
-    expect(fn () => Bank::PagBrasil->payout(pbDtoIntegration())->cadastrarFavorecido(new PayeeData('91051605962', name: 'José')))
+    expect(fn () => PagBrasil::make()->payout(pbDtoIntegration())->cadastrarFavorecido(new PayeeData('91051605962', name: 'José')))
         ->toThrow(InvalidArgumentException::class, 'sem bank');
 
-    Bank::PagBrasil->payout(pbDtoIntegration())->atualizarFavorecido(new PayeeData('91051605962', email: 'novo@example.com'));
+    PagBrasil::make()->payout(pbDtoIntegration())->atualizarFavorecido(new PayeeData('91051605962', email: 'novo@example.com'));
 
     Http::assertSent(fn (Request $r) => str_ends_with($r->url(), '/api/checkout/add') && $r['payment_option'] === 'X' && $r['amount_brl'] === '50.00');
     Http::assertSent(fn (Request $r) => ($r['action'] ?? null) === 'updatepayee' && $r['payee_email'] === 'novo@example.com' && ! isset($r['payee_name']));
@@ -103,7 +103,7 @@ it('PagStream por DTO: filtro na query, corpo JSON tipado', function () {
         '*/subscriptions/P1/shippings' => Http::response(['first_buy_shippings' => [], 'renewal_shippings' => []]),
     ]);
 
-    $stream = Bank::PagBrasil->pagStream(pbDtoIntegration());
+    $stream = PagBrasil::make()->pagStream(pbDtoIntegration());
     $stream->assinaturas()->listar(new SubscriptionFilter(email: 'maria@example.com'));
     $stream->assinaturas()->cancelar('P1', new Cancellation(CancellationOption::NotSatisfied));
     $stream->recorrencias()->adicionarItem('P1', 'next', new RecurrenceItem('SKU-1', 2, 24.95));

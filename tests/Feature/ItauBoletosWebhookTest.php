@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
-use SistemAtc\Banks\Itau\DTO\Response\Boletos\NotificacaoBoleto;
-use SistemAtc\Banks\Itau\Enums\TipoNotificacaoBoleto;
+use SistemAtc\Banks\Banks\Itau\Itau;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Boletos\NotificacaoBoleto;
+use SistemAtc\Banks\Banks\Itau\Enums\TipoNotificacaoBoleto;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function itauWebhookIntegration(): FakeBankIntegration
@@ -33,7 +33,7 @@ it('cadastra o webhook de boletos no host proprio da v3', function () {
         ]),
     ]);
 
-    $res = Bank::Itau->boletos(itauWebhookIntegration())->notificacoes()->cadastrar([
+    $res = Itau::make()->boletos(itauWebhookIntegration())->notificacoes()->cadastrar([
         'id_beneficiario' => '150000154711',
         'webhook_url' => 'https://bunker.example.com/api/webhooks/itau-boletos',
         'webhook_client_id' => '821a721a-8873-4b6a-af68-da4a48cb39f6',
@@ -64,7 +64,7 @@ it('consulta os cadastros do beneficiario filtrando por tipo', function () {
         ]),
     ]);
 
-    $list = Bank::Itau->boletos(itauWebhookIntegration())
+    $list = Itau::make()->boletos(itauWebhookIntegration())
         ->notificacoes()
         ->consultar('150000154711', TipoNotificacaoBoleto::BAIXA_OPERACIONAL);
 
@@ -79,7 +79,7 @@ it('consulta os cadastros do beneficiario filtrando por tipo', function () {
 it('exclui um cadastro de notificacao', function () {
     Http::fake(['*/notificacoes_boletos/*' => Http::response([], 204)]);
 
-    Bank::Itau->boletos(itauWebhookIntegration())->notificacoes()->excluir('b78cc2ff');
+    Itau::make()->boletos(itauWebhookIntegration())->notificacoes()->excluir('b78cc2ff');
 
     Http::assertSent(fn ($r) => $r->method() === 'DELETE'
         && str_ends_with($r->url(), '/notificacoes_boletos/b78cc2ff'));

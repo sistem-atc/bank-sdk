@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
 use SistemAtc\Banks\Exceptions\PagBrasilRequestException;
 use SistemAtc\Banks\Exceptions\PagBrasilSignatureException;
-use SistemAtc\Banks\PagBrasil\DTO\Response\Orders\Order;
-use SistemAtc\Banks\PagBrasil\Enums\CardBrand;
-use SistemAtc\Banks\PagBrasil\Enums\CardErrorCode;
-use SistemAtc\Banks\PagBrasil\Enums\OrderStatus;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Orders\Order;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\CardBrand;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\CardErrorCode;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\OrderStatus;
 use SistemAtc\Banks\Tests\Fakes\FakePagBrasilIntegration;
 
 function pbXml(string $fixture): string
@@ -20,7 +20,7 @@ function pbXml(string $fixture): string
 
 function pbOrders(?FakePagBrasilIntegration $integration = null)
 {
-    return Bank::PagBrasil->pedidos($integration ?? new FakePagBrasilIntegration());
+    return PagBrasil::make()->pedidos($integration ?? new FakePagBrasilIntegration());
 }
 
 it('cria pedido de cartão em form-urlencoded, credenciais no corpo, e hidrata o XML Latin-1', function () {
@@ -145,7 +145,7 @@ it('estorna e aceita só a confirmação textual', function () {
 it('estorno por chave Pix leva os dados do cliente', function () {
     Http::fake(['*/api/order/refund' => Http::response('Refund request received')]);
 
-    pbOrders()->estornar('1', '10.00', ['customer_pix_key_type' => \SistemAtc\Banks\PagBrasil\Enums\PixKeyType::Email, 'customer_pix_key' => 'a@b.com']);
+    pbOrders()->estornar('1', '10.00', ['customer_pix_key_type' => \SistemAtc\Banks\Gateways\PagBrasil\Enums\PixKeyType::Email, 'customer_pix_key' => 'a@b.com']);
 
     Http::assertSent(fn (Request $r) => $r['customer_pix_key_type'] === 'email' && $r['customer_pix_key'] === 'a@b.com');
 });

@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
+use SistemAtc\Banks\Banks\Bradesco\Bradesco;
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\CobrancaConsultaMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\CobrancaMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\CobrancaSplitMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Cobranca\CobrancaWebhookMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Cobranca\CobrancaConsultaMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Cobranca\CobrancaMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Cobranca\CobrancaSplitMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Cobranca\CobrancaWebhookMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /**
- * Cobrança Bradesco — a fiação no connector (Bank::Bradesco->cobranca()) ainda
+ * Cobrança Bradesco — a fiação no connector (Bradesco::make()->cobranca()) ainda
  * não existe, então instanciamos as classes de método direto via
  * HttpClientFactory. Todas as operações são da família open_api.
  */

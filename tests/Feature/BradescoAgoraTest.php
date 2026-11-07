@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\Endpoints\Agora\AgoraMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Agora\CadastroMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Agora\CarteiraMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Agora\ExtratoMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Agora\PosicaoMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\Agora\SaldoMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Agora\AgoraMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Agora\CadastroMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Agora\CarteiraMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Agora\ExtratoMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Agora\PosicaoMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Agora\SaldoMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function authedAgora(): FakeBankIntegration

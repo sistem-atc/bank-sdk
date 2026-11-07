@@ -1,0 +1,56 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SistemAtc\Banks\Banks\Itau\Endpoints\Boletos;
+
+use SistemAtc\Banks\Contracts\BankIntegration;
+use SistemAtc\Banks\Banks\Itau\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Itau\Support\ItauHosts;
+
+/**
+ * Fachada do produto Boletos Cobrança do Itaú. Reúne os grupos de métodos, cada
+ * um construído com o HOST correto — emissão/instrução ficam no host padrão,
+ * mas consulta de detalhe e extrato vivem em subdomínios próprios.
+ *
+ *   Itau::make()->boletos($i)->emissao()->emitir([...]);
+ *   Itau::make()->boletos($i)->consulta()->consultarDetalhe(...);
+ */
+final class Boletos
+{
+    public function __construct(private readonly BankIntegration $integration) {}
+
+    public function emissao(): BoletosMethods
+    {
+        return new BoletosMethods($this->client('default'), $this->integration, ItauHosts::resolve('default', $this->integration));
+    }
+
+    public function instrucao(): BoletosInstrucaoMethods
+    {
+        return new BoletosInstrucaoMethods($this->client('default'), $this->integration, ItauHosts::resolve('default', $this->integration));
+    }
+
+    public function consulta(): BoletosConsultaMethods
+    {
+        return new BoletosConsultaMethods($this->client('boletos_consulta'), $this->integration, ItauHosts::resolve('boletos_consulta', $this->integration));
+    }
+
+    public function extrato(): BoletosExtratoMethods
+    {
+        return new BoletosExtratoMethods($this->client('boletos_extrato'), $this->integration, ItauHosts::resolve('boletos_extrato', $this->integration));
+    }
+
+    /**
+     * Webhook de boletos (API v3, host próprio): notificação em tempo real de
+     * pagamento (baixa operacional) e liquidação (baixa efetiva).
+     */
+    public function notificacoes(): BoletosNotificacaoMethods
+    {
+        return new BoletosNotificacaoMethods($this->client('boletos_v3'), $this->integration, ItauHosts::resolve('boletos_v3', $this->integration));
+    }
+
+    private function client(string $product): \Illuminate\Http\Client\PendingRequest
+    {
+        return HttpClientFactory::make($this->integration, ItauHosts::resolve($product, $this->integration));
+    }
+}

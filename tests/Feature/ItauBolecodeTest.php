@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
+use SistemAtc\Banks\Banks\Itau\Itau;
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Itau\DTO\Response\Bolecode\BolecodeResponse;
-use SistemAtc\Banks\Itau\Endpoints\Bolecode\BolecodeMethods;
-use SistemAtc\Banks\Itau\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Bolecode\BolecodeResponse;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Bolecode\BolecodeMethods;
+use SistemAtc\Banks\Banks\Itau\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /**
- * Bolecode Pix — a fiação no connector (Bank::Itau->bolecode()) ainda não
+ * Bolecode Pix — a fiação no connector (Itau::make()->bolecode()) ainda não
  * existe, então instanciamos a classe de método direto via HttpClientFactory.
  */
 function authedBolecode(): FakeBankIntegration

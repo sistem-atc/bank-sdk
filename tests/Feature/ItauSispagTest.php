@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
-use SistemAtc\Banks\Itau\DTO\Response\Sispag\PagamentosSispagList;
-use SistemAtc\Banks\Itau\DTO\Response\Sispag\TransferenciaResponse;
+use SistemAtc\Banks\Banks\Itau\Itau;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Sispag\PagamentosSispagList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Sispag\TransferenciaResponse;
 use SistemAtc\Banks\Support\ClientCertificate;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
@@ -29,7 +29,7 @@ it('inclui Pix via SISPAG (POST /sispag/v1/transferencias) com headers obrigator
         ]),
     ]);
 
-    $res = Bank::Itau->pix(itauAuthed())->pagar([
+    $res = Itau::make()->pix(itauAuthed())->pagar([
         'valor_pagamento' => '1260.00',
         'data_pagamento' => '2026-07-22',
         'chave' => 'maria_pix@gmail.com',
@@ -62,7 +62,7 @@ it('lista pagamentos SISPAG desembrulhando data{itens,total,pagination}', functi
         ]),
     ]);
 
-    $list = Bank::Itau->payments(itauAuthed())->listar(['conta_operacao' => '00062573']);
+    $list = Itau::make()->payments(itauAuthed())->listar(['conta_operacao' => '00062573']);
 
     expect($list)->toBeInstanceOf(PagamentosSispagList::class)
         ->and($list->itens)->toHaveCount(2)
@@ -83,7 +83,7 @@ it('usa private_key_jwt (client_assertion) quando a integracao pede', function (
         '*/sandbox/api/oauth/token' => Http::response(['access_token' => 'JWT_TOK', 'expires_in' => 300]),
     ]);
 
-    $token = Bank::Itau->auth($integration);
+    $token = Itau::make()->auth($integration);
 
     expect($token->accessToken)->toBe('JWT_TOK');
 

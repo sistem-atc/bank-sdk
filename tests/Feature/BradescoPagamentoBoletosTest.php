@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\DTO\Response\PagamentoBoletos\Agendamento;
-use SistemAtc\Banks\Bradesco\DTO\Response\PagamentoBoletos\PagamentoDevolvido;
-use SistemAtc\Banks\Bradesco\Endpoints\PagamentoBoletos\PagamentoBoletosMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PagamentoBoletos\Agendamento;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PagamentoBoletos\PagamentoDevolvido;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PagamentoBoletos\PagamentoBoletosMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /** Integração Bradesco autenticável (produção, família open_api). */

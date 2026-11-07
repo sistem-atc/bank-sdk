@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixTransferencias\SolicitarTransferenciaResponse;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixTransferencias\TransferenciaResponse;
-use SistemAtc\Banks\Bradesco\Endpoints\PixTransferencias\PixTransferenciasMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixTransferencias\SolicitarTransferenciaResponse;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixTransferencias\TransferenciaResponse;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PixTransferencias\PixTransferenciasMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function authedPixTransferencias(): FakeBankIntegration

@@ -2,19 +2,20 @@
 
 declare(strict_types=1);
 
+use SistemAtc\Banks\Banks\Itau\Itau;
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Itau\DTO\Response\Boletos\BoletoConsultaResponse;
-use SistemAtc\Banks\Itau\DTO\Response\Boletos\BoletoEmissaoResponse;
-use SistemAtc\Banks\Itau\DTO\Response\Boletos\MovimentacaoExtratoResponse;
-use SistemAtc\Banks\Itau\Endpoints\Boletos\BoletosConsultaMethods;
-use SistemAtc\Banks\Itau\Endpoints\Boletos\BoletosExtratoMethods;
-use SistemAtc\Banks\Itau\Endpoints\Boletos\BoletosInstrucaoMethods;
-use SistemAtc\Banks\Itau\Endpoints\Boletos\BoletosMethods;
-use SistemAtc\Banks\Itau\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Boletos\BoletoConsultaResponse;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Boletos\BoletoEmissaoResponse;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Boletos\MovimentacaoExtratoResponse;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Boletos\BoletosConsultaMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Boletos\BoletosExtratoMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Boletos\BoletosInstrucaoMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Boletos\BoletosMethods;
+use SistemAtc\Banks\Banks\Itau\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /**
- * Boletos Cobrança — a fiação no connector (Bank::Itau->boletos()) ainda não
+ * Boletos Cobrança — a fiação no connector (Itau::make()->boletos()) ainda não
  * existe, então instanciamos as classes de método direto via HttpClientFactory.
  */
 function authedBoletos(): FakeBankIntegration

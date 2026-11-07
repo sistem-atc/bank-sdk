@@ -3,27 +3,27 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\Cobranca;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaEmv;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaEstatica;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaVencimento;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaVencimentoEmv;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\Devolucao;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\ListaCobrancas;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\ListaLocations;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\ListaPixRecebidos;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\ListaWebhooks;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\Location;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\PixRecebido;
-use SistemAtc\Banks\Bradesco\DTO\Response\PixQrCode\Webhook;
-use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\CobrancaEstaticaMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\CobrancaImediataMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\CobrancaVencimentoMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\LocationMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\PixRecebidoMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\PixQrCode\WebhookMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\Cobranca;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaEmv;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaEstatica;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaVencimento;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\CobrancaVencimentoEmv;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\Devolucao;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\ListaCobrancas;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\ListaLocations;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\ListaPixRecebidos;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\ListaWebhooks;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\Location;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\PixRecebido;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\PixQrCode\Webhook;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PixQrCode\CobrancaEstaticaMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PixQrCode\CobrancaImediataMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PixQrCode\CobrancaVencimentoMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PixQrCode\LocationMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PixQrCode\PixRecebidoMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\PixQrCode\WebhookMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /**

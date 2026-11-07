@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use SistemAtc\Banks\PagBrasil\Support\ParsedResponse;
-use SistemAtc\Banks\PagBrasil\Support\Signature;
+use SistemAtc\Banks\Gateways\PagBrasil\Support\ParsedResponse;
+use SistemAtc\Banks\Gateways\PagBrasil\Support\Signature;
 use SistemAtc\Banks\Tests\Fakes\FakePagBrasilIntegration;
 
 /*

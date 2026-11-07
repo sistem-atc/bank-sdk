@@ -3,19 +3,19 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Itau\DTO\Response\RecebimentosPix\Cobranca;
-use SistemAtc\Banks\Itau\DTO\Response\RecebimentosPix\CobrancaList;
-use SistemAtc\Banks\Itau\DTO\Response\RecebimentosPix\Devolucao;
-use SistemAtc\Banks\Itau\DTO\Response\RecebimentosPix\Location;
-use SistemAtc\Banks\Itau\DTO\Response\RecebimentosPix\Pix;
-use SistemAtc\Banks\Itau\DTO\Response\RecebimentosPix\PixList;
-use SistemAtc\Banks\Itau\DTO\Response\RecebimentosPix\Webhook;
-use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\CobrancaImediataMethods;
-use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\CobrancaVencimentoMethods;
-use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\LocationMethods;
-use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\PixRecebidoMethods;
-use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\WebhookMethods;
-use SistemAtc\Banks\Itau\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\RecebimentosPix\Cobranca;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\RecebimentosPix\CobrancaList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\RecebimentosPix\Devolucao;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\RecebimentosPix\Location;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\RecebimentosPix\Pix;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\RecebimentosPix\PixList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\RecebimentosPix\Webhook;
+use SistemAtc\Banks\Banks\Itau\Endpoints\RecebimentosPix\CobrancaImediataMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\RecebimentosPix\CobrancaVencimentoMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\RecebimentosPix\LocationMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\RecebimentosPix\PixRecebidoMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\RecebimentosPix\WebhookMethods;
+use SistemAtc\Banks\Banks\Itau\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function authedRecebimentosPix(): FakeBankIntegration

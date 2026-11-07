@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
-use SistemAtc\Banks\Itau\DTO\Response\BoletoNegociado\AtivosFinanceirosList;
-use SistemAtc\Banks\Itau\DTO\Response\BoletoNegociado\BoletoNegociado;
-use SistemAtc\Banks\Itau\DTO\Response\BoletoNegociado\BoletosNegociadosList;
-use SistemAtc\Banks\Itau\DTO\Response\Conciliacao\LancamentoPix;
-use SistemAtc\Banks\Itau\DTO\Response\Conciliacao\LancamentosPixList;
-use SistemAtc\Banks\Itau\Endpoints\BoletoNegociado\BoletoNegociadoMethods;
-use SistemAtc\Banks\Itau\Endpoints\Conciliacao\ConciliacaoMethods;
-use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\QrCodeMethods as PixQrCodeMethods;
+use SistemAtc\Banks\Banks\Itau\Itau;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\BoletoNegociado\AtivosFinanceirosList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\BoletoNegociado\BoletoNegociado;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\BoletoNegociado\BoletosNegociadosList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Conciliacao\LancamentoPix;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Conciliacao\LancamentosPixList;
+use SistemAtc\Banks\Banks\Itau\Endpoints\BoletoNegociado\BoletoNegociadoMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Conciliacao\ConciliacaoMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\RecebimentosPix\QrCodeMethods as PixQrCodeMethods;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /** Integração autenticada em PRODUÇÃO (pra validar os hosts reais). */
@@ -31,7 +31,7 @@ function itauNovoProd(): FakeBankIntegration
 it('Pix Automático: /rec agora carrega o prefixo /pixautomatico/v1', function () {
     Http::fake(['*' => Http::response(['idRec' => 'RN1'])]);
 
-    Bank::Itau->pixAutomatico(itauNovoProd())->recorrencias()->consultar('RN1');
+    Itau::make()->pixAutomatico(itauNovoProd())->recorrencias()->consultar('RN1');
 
     Http::assertSent(fn ($r) => str_starts_with(
         $r->url(),
@@ -42,7 +42,7 @@ it('Pix Automático: /rec agora carrega o prefixo /pixautomatico/v1', function (
 it('Pix Automático: dados-pagador usa /recorrencia (não /rec)', function () {
     Http::fake(['*' => Http::response(['pagador' => []])]);
 
-    Bank::Itau->pixAutomatico(itauNovoProd())->recorrencias()->consultarDadosPagador('RN1');
+    Itau::make()->pixAutomatico(itauNovoProd())->recorrencias()->consultarDadosPagador('RN1');
 
     Http::assertSent(fn ($r) => $r->method() === 'GET' && str_contains(
         $r->url(),
@@ -53,7 +53,7 @@ it('Pix Automático: dados-pagador usa /recorrencia (não /rec)', function () {
 it('Pix Automático: desvincularLocation usa segmento literal idRec', function () {
     Http::fake(['*' => Http::response([])]);
 
-    Bank::Itau->pixAutomatico(itauNovoProd())->recorrencias()->desvincularLocation('108');
+    Itau::make()->pixAutomatico(itauNovoProd())->recorrencias()->desvincularLocation('108');
 
     Http::assertSent(fn ($r) => $r->method() === 'DELETE'
         && str_ends_with($r->url(), '/pixautomatico/v1/locrec/108/idRec'));
@@ -62,7 +62,7 @@ it('Pix Automático: desvincularLocation usa segmento literal idRec', function (
 it('Pix Automático: cancelar cobrança QR faz PATCH /cobrancas/{id}', function () {
     Http::fake(['*' => Http::response(['status' => 'CANCELADA'])]);
 
-    Bank::Itau->pixAutomatico(itauNovoProd())->qrCode()->cancelar('COB1', ['status' => 'CANCELADA']);
+    Itau::make()->pixAutomatico(itauNovoProd())->qrCode()->cancelar('COB1', ['status' => 'CANCELADA']);
 
     Http::assertSent(fn ($r) => $r->method() === 'PATCH'
         && str_ends_with($r->url(), '/qrcode-pix-automatico/v1/cobrancas/COB1'));
@@ -73,7 +73,7 @@ it('Pix Automático: cancelar cobrança QR faz PATCH /cobrancas/{id}', function 
 it('Recebimentos Pix: resolver de QR imediato bate em /regulatorio-pix/v2/qr/{token}', function () {
     Http::fake(['*' => Http::response(['revisao' => 0])]);
 
-    $out = Bank::Itau->recebimentosPix(itauNovoProd())->qrCode()->imediata('TOKEN123');
+    $out = Itau::make()->recebimentosPix(itauNovoProd())->qrCode()->imediata('TOKEN123');
 
     expect($out)->toBeArray();
     Http::assertSent(fn ($r) => str_starts_with(
@@ -85,7 +85,7 @@ it('Recebimentos Pix: resolver de QR imediato bate em /regulatorio-pix/v2/qr/{to
 it('Recebimentos Pix: resolver de QR com vencimento bate em /qr/cobv/{token}', function () {
     Http::fake(['*' => Http::response([])]);
 
-    $receb = Bank::Itau->recebimentosPix(itauNovoProd());
+    $receb = Itau::make()->recebimentosPix(itauNovoProd());
     expect($receb->qrCode())->toBeInstanceOf(PixQrCodeMethods::class);
 
     $receb->qrCode()->comVencimento('TOKEN123');
@@ -98,7 +98,7 @@ it('Recebimentos Pix: resolver de QR com vencimento bate em /qr/cobv/{token}', f
 it('Boletos: listar bate em GET /cash_management/v2/boletos', function () {
     Http::fake(['*' => Http::response(['data' => []])]);
 
-    Bank::Itau->boletos(itauNovoProd())->emissao()->listar(['page' => 1]);
+    Itau::make()->boletos(itauNovoProd())->emissao()->listar(['page' => 1]);
 
     Http::assertSent(fn ($r) => $r->method() === 'GET'
         && str_starts_with($r->url(), 'https://api.itau.com.br/cash_management/v2/boletos'));
@@ -116,7 +116,7 @@ it('Conciliação: lista lançamentos Pix desembrulhando data[] pra itens[]', fu
         ]),
     ]);
 
-    $list = Bank::Itau->conciliacao(itauNovoProd())->lancamentos(['data_lancamento' => '2026-08-01,2026-08-24']);
+    $list = Itau::make()->conciliacao(itauNovoProd())->lancamentos(['data_lancamento' => '2026-08-01,2026-08-24']);
 
     expect($list)->toBeInstanceOf(LancamentosPixList::class)
         ->and($list->itens)->toHaveCount(2)
@@ -134,7 +134,7 @@ it('Conciliação: lista lançamentos Pix desembrulhando data[] pra itens[]', fu
 it('Conciliação: consulta um lançamento por id', function () {
     Http::fake(['*' => Http::response(['data' => ['id_lancamento' => 'L9', 'e2eid' => 'E123']])]);
 
-    $lanc = Bank::Itau->conciliacao(itauNovoProd())->lancamento('L9');
+    $lanc = Itau::make()->conciliacao(itauNovoProd())->lancamento('L9');
 
     expect($lanc)->toBeInstanceOf(LancamentoPix::class)
         ->and($lanc->idLancamento)->toBe('L9')
@@ -155,7 +155,7 @@ it('Boletos Negociados: lista boletos hidratando itens[] e pagador cru', functio
         ]),
     ]);
 
-    $list = Bank::Itau->boletoNegociado(itauNovoProd())->listarBoletos(['cpfPagador' => '33378996846']);
+    $list = Itau::make()->boletoNegociado(itauNovoProd())->listarBoletos(['cpfPagador' => '33378996846']);
 
     expect($list)->toBeInstanceOf(BoletosNegociadosList::class)
         ->and($list->itens[0])->toBeInstanceOf(BoletoNegociado::class)
@@ -170,7 +170,7 @@ it('Boletos Negociados: lista boletos hidratando itens[] e pagador cru', functio
 it('Boletos Negociados: cria boleto (POST /boleto/v1/boletos)', function () {
     Http::fake(['*' => Http::response(['data' => ['idBoleto' => 'BNEW', 'situacao' => 'aberto']])]);
 
-    $res = Bank::Itau->boletoNegociado(itauNovoProd())->criarBoleto(['seuNumero' => '123']);
+    $res = Itau::make()->boletoNegociado(itauNovoProd())->criarBoleto(['seuNumero' => '123']);
 
     expect($res)->toBeInstanceOf(BoletoNegociado::class)->and($res->idBoleto)->toBe('BNEW');
     Http::assertSent(fn ($r) => $r->method() === 'POST' && str_ends_with($r->url(), '/boleto/v1/boletos'));
@@ -185,7 +185,7 @@ it('Boletos Negociados: consulta ativos financeiros (recebíveis)', function () 
         ]),
     ]);
 
-    $list = Bank::Itau->boletoNegociado(itauNovoProd())->ativosFinanceiros(['tipoAtivoFinanceiro' => 'DUPLICATA']);
+    $list = Itau::make()->boletoNegociado(itauNovoProd())->ativosFinanceiros(['tipoAtivoFinanceiro' => 'DUPLICATA']);
 
     expect($list)->toBeInstanceOf(AtivosFinanceirosList::class)
         ->and($list->itens[0]->numeroIdentificacaoAtivoFinanceiro)->toBe('ATIV001')
@@ -199,6 +199,6 @@ it('Boletos Negociados: consulta ativos financeiros (recebíveis)', function () 
 it('fachada expõe conciliação e boletos negociados', function () {
     $i = itauNovoProd();
 
-    expect(Bank::Itau->conciliacao($i))->toBeInstanceOf(ConciliacaoMethods::class)
-        ->and(Bank::Itau->boletoNegociado($i))->toBeInstanceOf(BoletoNegociadoMethods::class);
+    expect(Itau::make()->conciliacao($i))->toBeInstanceOf(ConciliacaoMethods::class)
+        ->and(Itau::make()->boletoNegociado($i))->toBeInstanceOf(BoletoNegociadoMethods::class);
 });

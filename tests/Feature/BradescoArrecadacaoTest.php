@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\DTO\Response\Arrecadacao\ConsultaPagamentosResponse;
-use SistemAtc\Banks\Bradesco\DTO\Response\Arrecadacao\PagamentoEfetivacaoResponse;
-use SistemAtc\Banks\Bradesco\Endpoints\Arrecadacao\ArrecadacaoMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\Arrecadacao\ConsultaPagamentosResponse;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\Arrecadacao\PagamentoEfetivacaoResponse;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\Arrecadacao\ArrecadacaoMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function authedArrecadacao(): FakeBankIntegration

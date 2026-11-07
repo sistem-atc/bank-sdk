@@ -24,12 +24,30 @@ class BankRequestException extends RuntimeException
         // Só texto vira mensagem: há API que manda `error` como OBJETO
         // ({"error": {"code": …}}, ex.: PagStream da PagBrasil) — interpolar
         // isso estourava "Array to string conversion" dentro da exceção.
+        // `detail`/`title` = RFC 7807 (Inter, APIs Pix do Bacen); `erro.mensagem`
+        // = formato antigo da API Banking do Inter.
+        $nested = is_array($body['erro'] ?? null) ? $body['erro'] : [];
         $detail = 'HTTP '.$response->status();
-        foreach (['message', 'error_description', 'error'] as $key) {
-            if (isset($body[$key]) && is_scalar($body[$key]) && (string) $body[$key] !== '') {
-                $detail = (string) $body[$key];
+        foreach ([
+            $body['message'] ?? null,
+            $body['error_description'] ?? null,
+            $body['error'] ?? null,
+            $body['detail'] ?? null,
+            $body['title'] ?? null,
+            $nested['mensagemDetalhe'] ?? null,
+            $nested['mensagem'] ?? null,
+        ] as $candidate) {
+            if (is_scalar($candidate) && (string) $candidate !== '') {
+                $detail = (string) $candidate;
                 break;
             }
+        }
+
+        // Violações de validação (RFC 7807 do Inter/Bacen): a 1ª diz qual campo.
+        $violacao = is_array($body['violacoes'] ?? null) ? ($body['violacoes'][0] ?? null) : null;
+        if (is_array($violacao) && isset($violacao['razao']) && is_scalar($violacao['razao'])) {
+            $campo = isset($violacao['propriedade']) && is_scalar($violacao['propriedade']) ? $violacao['propriedade'].': ' : '';
+            $detail .= ' ('.$campo.$violacao['razao'].')';
         }
 
         parent::__construct("[{$bank}] {$detail}", $response->status());

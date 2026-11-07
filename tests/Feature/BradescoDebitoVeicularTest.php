@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularBaMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularMgMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularPrMethods;
-use SistemAtc\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularSpMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularBaMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularMgMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularPrMethods;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\DebitoVeicular\DebitoVeicularSpMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function authedDebitoVeicular(): FakeBankIntegration

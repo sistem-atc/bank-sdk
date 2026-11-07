@@ -1,9 +1,9 @@
 # sistem-atc/bank-sdk
 
-SDK PHP unificado de integração bancária — **Bradesco** e **Itaú** — e do
+SDK PHP unificado de integração bancária — **Bradesco**, **Itaú** e **Inter PJ** — e do
 gateway de pagamento **PagBrasil**. Segue o
 mesmo molde do [`sistem-atc/marketplace-sdk`](https://github.com/sistem-atc/marketplace-sdk):
-entrypoint enum, grupos de métodos por domínio, DTOs tipados e credenciais
+enums de identificação, connectors por banco/gateway, grupos de métodos por domínio, DTOs tipados e credenciais
 fornecidas pelo host via contract.
 
 Cobre Open Banking (OAuth2 client_credentials + mTLS), consulta de extrato,
@@ -27,27 +27,74 @@ php artisan vendor:publish --tag=banks-config
 
 ## Uso
 
-O entrypoint é o enum `Bank`, encadeado a partir do case:
+Cada banco é uma classe (`Banks\{Banco}\{Banco}`) que implementa o contrato
+comum `BankConnector`. A regra de cada domínio é da classe do banco:
 
 ```php
-use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Banks\Itau\Itau;
 
 // Autenticação (client_credentials + mTLS) — devolve o AuthToken vigente
-$token = Bank::Itau->auth($integration);
+$token = Itau::make()->auth($integration);
 
 // Extrato (conciliação)
-$eventos = Bank::Itau->statement($integration)->periodo('2026-07-01', '2026-07-31');
+$eventos = Itau::make()->statement($integration)->periodo('2026-07-01', '2026-07-31');
 
 // Pagamento Pix de saída (SISPAG)
-$res = Bank::Itau->pix($integration)->pagar([
+$res = Itau::make()->pix($integration)->pagar([
     'valor_pagamento' => '1260.00',
     'data_pagamento'  => '2026-07-22',
     'chave'           => 'maria_pix@gmail.com',
 ]);
 ```
 
-Trocar `Bank::Itau` por `Bank::Bradesco` não muda o código do consumidor nos
-domínios comuns — cada método é tipado pela interface de domínio, não pelo banco.
+Quando o banco vem de dado (a conexão guarda `'itau'`, `'bradesco'`…), o enum
+`Bank` resolve o connector. O enum só identifica o banco: não tem regra.
+
+```php
+use SistemAtc\Banks\Bank;
+
+$connector = Bank::from($conexao->banco)->connector();   // BankConnector
+$connector->statement($integration)->periodo('2026-07-01', '2026-07-31');
+Bank::Itau->code();                                       // '341'
+```
+
+Trocar de banco não muda o código do consumidor nos domínios comuns: cada
+método é tipado pela interface de domínio, não pelo banco.
+
+### Produtos específicos de cada banco
+
+O contrato comum (`auth`, `statement`, `pix`, `payments`, `dda`, `code`) é o
+mínimo que todo banco tem. Produtos que só um banco oferece ficam só no
+connector daquele banco, tipados — o IDE/PHPStan só mostra o que o banco tem:
+
+```php
+use SistemAtc\Banks\Banks\Bradesco\Bradesco;
+use SistemAtc\Banks\Banks\Inter\Inter;
+use SistemAtc\Banks\Banks\Itau\Itau;
+
+Itau::make()->boletos($integration)->emissao()->emitir([...]);
+Itau::make()->recebimentosPix($integration)->cobImediata()->criar([...]);
+Bradesco::make()->cobranca($integration)->registrar([...]);
+Bradesco::make()->debitoVeicular($integration)->sp();
+Inter::make()->cobranca($integration)->boletos()->emitir([...]);
+Inter::make()->recebimentosPix($integration)->cob()->criar([...]);
+```
+
+O enum é *backed* (`'bradesco'`, `'inter'`, `'itau'`): dá pra guardar o banco
+da conexão no banco de dados e resolver com `Bank::from($valor)`. Gateways de
+pagamento ficam no enum `Gateway` (ver [PagBrasil](#pagbrasil)).
+
+### Migrando da 0.x para a 2.0
+
+| 0.x | 2.0 |
+|---|---|
+| `Bank::Itau->statement($i)` (e `auth`, `pix`, `payments`, `dda`) | `Itau::make()->statement($i)` ou `Bank::Itau->connector()->statement($i)` |
+| `Bank::Itau->boletos($i)` e demais atalhos de produto | `Itau::make()->boletos($i)` |
+| `Bank::PagBrasil`, `Bank::PagBrasil->pedidos($i)` | `Gateway::PagBrasil`, `PagBrasil::make()->pedidos($i)` |
+| `SistemAtc\Banks\Itau\…`, `\Bradesco\…` | `SistemAtc\Banks\Banks\Itau\…`, `\Banks\Bradesco\…` |
+| `SistemAtc\Banks\PagBrasil\…` | `SistemAtc\Banks\Gateways\PagBrasil\…` |
+
+`Bank::X->code()`, `Bank::from()` e `Bank::X->connector()` não mudaram.
 
 ## Credenciais — o contract `BankIntegration`
 
@@ -56,7 +103,8 @@ O SDK **não** guarda credenciais. O host (ex.: o ERP) implementa
 
 - `client_id` / `client_secret` do app no portal do banco;
 - o **certificado mTLS** (`getCertificate(): ?ClientCertificate`) — PEM
-  `.crt`+`.key` (Itaú, "certificado dinâmico") ou PKCS#12 `.pfx` (Bradesco);
+  `.crt`+`.key` (Itaú, "certificado dinâmico"; Inter, baixado no Internet
+  Banking) ou PKCS#12 `.pfx` (Bradesco);
 - flags de ambiente e persistência do `access_token`.
 
 Multiempresa é nativo: cada CNPJ tem seu app e seu certificado, e cada chamada
@@ -71,67 +119,118 @@ carrega a integração da empresa dona da operação.
   pelo SDK.
 - **Bradesco** — `client_credentials` (Basic), com hook pra `client_assertion`
   JWT quando a API exigir.
+- **Inter PJ** — `client_credentials` sobre mTLS (sandbox também exige o
+  certificado), em `{host}/oauth/v2/token`. O token vale 1h e o endpoint de
+  token aceita só **5 chamadas por minuto**, então o SDK pede um token com
+  todos os escopos da integração (`settings['scopes']`, ou a lista de
+  `banks.inter.scopes`) e o reaproveita. O Inter recusa escopo que não foi
+  marcado no app: informe só os que a aplicação da empresa tem.
+  `settings['conta_corrente']` vira o header `x-conta-corrente`, obrigatório
+  quando o app está ligado a mais de uma conta.
+  Cada ambiente tem o seu par `.crt`+`.key`, e o sandbox do Inter só fica no
+  ar de segunda a sexta, das 8h às 20h.
 
 ## Domínios
 
-| Domínio | Itaú | Bradesco |
-|---|---|---|
-| Auth (OAuth2 + mTLS) | ✅ | ✅ |
-| Extrato / Saldo | ✅ | ✅ |
-| Pagamentos / Pix saída | ✅ | ✅ |
-| Boletos cobrança | ✅ | ✅ |
-| Recebimentos Pix (Bacen COB/COBV/PIX/LOC/WEBHOOK + resolver QR) | ✅ | ✅ |
-| Conciliação Pix (lançamentos conciliados) | ✅ | — |
-| Pix Automático (recorrência + cobrança + QR) | ✅ | — |
-| Bolecode Pix | ✅ | — |
-| Boletos Negociados / Ativos Financeiros (recebíveis) | ✅ | — |
-| Saque/Troco Pix | ✅ | — |
-| Cobrança QR Code (boleto híbrido) | — | ✅ |
-| Débito veicular (SP/MG/PR/BA) | — | ✅ |
-| Arrecadação (contas de consumo e tributos) | — | ✅ |
-| TED | — | ✅ |
-| Ágora Investimentos (somente leitura) | — | ✅ |
-| Gateway PagBrasil (ver seção própria) | — | — |
-| CNAB 240/400 (remessa/retorno) | compartilhado | compartilhado |
+| Domínio | Itaú | Bradesco | Inter |
+|---|---|---|---|
+| Auth (OAuth2 + mTLS) | ✅ | ✅ | ✅ |
+| Extrato / Saldo | ✅ | ✅ | ✅ |
+| Pagamentos / Pix saída | ✅ | ✅ | ✅ (boleto, DARF, lote, Pix) |
+| Boletos cobrança | ✅ | ✅ | ✅ (Cobrança v3, boleto com Pix) |
+| Recebimentos Pix (Bacen COB/COBV/PIX/LOC/WEBHOOK + resolver QR) | ✅ | ✅ | ✅ (sem resolver QR) |
+| Conciliação Pix (lançamentos conciliados) | ✅ | — | — |
+| Pix Automático (recorrência + cobrança + QR) | ✅ | — | — (fora por ora) |
+| Bolecode Pix | ✅ | — | ✅ (a Cobrança v3 já emite com Pix) |
+| Boletos Negociados / Ativos Financeiros (recebíveis) | ✅ | — | — |
+| Saque/Troco Pix | ✅ | — | — |
+| Cobrança QR Code (boleto híbrido) | — | ✅ | — |
+| Débito veicular (SP/MG/PR/BA) | — | ✅ | — |
+| Arrecadação (contas de consumo e tributos) | — | ✅ | — |
+| TED | — | ✅ | — |
+| Ágora Investimentos (somente leitura) | — | ✅ | — |
+| Gateway PagBrasil (ver seção própria) | — | — | — |
+| CNAB 240/400 (remessa/retorno) | compartilhado | compartilhado | compartilhado |
 
 > As APIs do Itaú vivem em hosts distintos por produto
 > (`api.itau.com.br`, `pix-pj.api.itau.com`, `account-statement.api.itau.com`…);
 > o SDK resolve o host por produto e ambiente.
+>
+> O Inter usa um host só por ambiente (`cdpj.partners.bancointer.com.br` e
+> `cdpj-sandbox.partners.uatinter.co`), com o produto no path (`/banking/v2`,
+> `/cobranca/v3`, `/pix/v2`). Os DTOs do Inter (`Banks/Inter/DTO/Response/*`) foram
+> gerados das specs OpenAPI oficiais do portal developers.inter.co.
+>
+> O Inter não tem API de DDA: `Inter::make()->dda()` lança `BadMethodCallException`.
+
+### Inter PJ
+
+```php
+use SistemAtc\Banks\Banks\Inter\Enums\TipoWebhookBanking;
+use SistemAtc\Banks\Banks\Inter\Inter;
+
+// Contrato comum
+Inter::make()->statement($i)->periodo('2026-11-01', '2026-11-07');
+Inter::make()->pix($i)->pagar(['chave' => '...', 'valor' => '99.90', 'identificador' => 'titulo-42']);
+Inter::make()->payments($i)->pagarBoleto(['linha_digitavel' => '...', 'valor' => '26.80', 'data_vencimento' => '2026-11-10']);
+
+// Produtos do Inter
+$banking = Inter::make()->banking($i);
+$banking->extrato()->saldo();
+$banking->extrato()->extratoCompleto('2026-11-01', '2026-11-07', ['tipoOperacao' => 'C']);
+$banking->pagamentos()->pagarDarf([...]);
+$banking->webhooks()->cadastrar(TipoWebhookBanking::PixPagamento, 'https://...');
+
+$boletos = Inter::make()->cobranca($i)->boletos();
+$codigo = $boletos->emitir([...])->codigoSolicitacao;   // emissão assíncrona
+$boletos->consultar($codigo)->pix->pixCopiaECola;
+
+$pix = Inter::make()->recebimentosPix($i);
+$pix->cob()->criar([...]);
+$pix->pixRecebido()->devolver($e2eId, 'dev-1', ['valor' => '5.00']);
+```
+
+- **Idempotência do Pix de saída:** o `identificador` vira o header
+  `x-id-idempotente`. Se não for UUID, o SDK deriva um UUID v5 estável dele,
+  então o retry do mesmo título não paga duas vezes.
+- **Pagamento de boleto não tem idempotência no Inter.** Antes de repetir um
+  pagamento que deu timeout, consulte com `payments()->listar()`.
 
 ## PagBrasil
 
-A PagBrasil é gateway, não banco: mesma fachada, mas sem extrato/DDA/SISPAG
-(`statement()`, `dda()`, `pix()`, `payments()` e `code()` falham com mensagem
-explícita). A integração implementa `Contracts\PagBrasilIntegration`, que
+A PagBrasil é gateway, não banco: implementa `Contracts\GatewayConnector`
+(só `make()` e `auth()`), não `BankConnector`, e não tem extrato, DDA, SISPAG
+nem código FEBRABAN. O enum `Gateway` resolve o connector a partir do valor
+persistido (`Gateway::from('pagbrasil')->connector()`). A integração implementa `Contracts\PagBrasilIntegration`, que
 soma ao `BankIntegration` o **pbtoken**, a **secret phrase** e a **signature
 key** (HMAC) do Dashboard.
 
 ```php
-use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
 
 // Pedidos — /api/order/* (cartão, débito, boleto, Pix). Entrada tipada
 // (DTO\Request\*) ou, por compatibilidade, array com os nomes da doc.
-$pedido = Bank::PagBrasil->pedidos($i)->pix(new PixOrder(
+$pedido = PagBrasil::make()->pedidos($i)->pix(new PixOrder(
     order: 'PED-123', productName: 'Whey 900g', products: [new Product('WHEY-900', 129.9)],
     customer: new Customer('José da Silva', '529.982.247-25', 'jose@x.com', '11999990000'),
     address: new Address('Av. Paulista, 100', '01311-100', 'São Paulo', 'SP'),
     amountBrl: 129.9, expirationMinutes: 30,
 ));
 $pedido->pixCode;                                   // copia-e-cola
-Bank::PagBrasil->pedidos($i)->consultar('PED-123'); // null se não existe
-Bank::PagBrasil->pedidos($i)->estornar(new Refund('PED-123', '129.90', new RefundPixKey(PixKeyType::Email, 'jose@x.com')));
+PagBrasil::make()->pedidos($i)->consultar('PED-123'); // null se não existe
+PagBrasil::make()->pedidos($i)->estornar(new Refund('PED-123', '129.90', new RefundPixKey(PixKeyType::Email, 'jose@x.com')));
 
 // Link de Pagamento, Pix Automático, Payout
-Bank::PagBrasil->linkPagamento($i)->criar(['order' => 'PED-124', 'amount_brl' => '50.00'])->urlPayment;
-Bank::PagBrasil->pixAutomatico($i)->consultarRecorrencia($pixRecId);
-Bank::PagBrasil->payout($i)->enviar('91051605962', '150.00', 'Comissão');
+PagBrasil::make()->linkPagamento($i)->criar(['order' => 'PED-124', 'amount_brl' => '50.00'])->urlPayment;
+PagBrasil::make()->pixAutomatico($i)->consultarRecorrencia($pixRecId);
+PagBrasil::make()->payout($i)->enviar('91051605962', '150.00', 'Comissão');
 
 // PagStream (assinaturas) — API REST v2 + as rotas que ainda são v1
-Bank::PagBrasil->pagStream($i)->assinaturas()->listar(['tax_id' => '12345678909']);
-Bank::PagBrasil->pagStream($i)->recorrencias()->pular('P17648804286', 'next');
+PagBrasil::make()->pagStream($i)->assinaturas()->listar(['tax_id' => '12345678909']);
+PagBrasil::make()->pagStream($i)->recorrencias()->pular('P17648804286', 'next');
 
 // IPN / webhook — confere secret + HMAC e devolve a notificação tipada
-$notificacao = Bank::PagBrasil->webhook($i)->parse($request->all());
+$notificacao = PagBrasil::make()->webhook($i)->parse($request->all());
 return response(WebhookVerifier::acknowledgement()); // "Received successfully …"
 
 // Liquidação (CSV do Dashboard; não há API) — taxas por transação
@@ -146,7 +245,7 @@ $linhas = SettlementReport::parse(file_get_contents($csv));
 | Payout | `/api/payout/` (addpayee, updatepayee, deletepayee, getpayee, addpayout) |
 | PagStream v2 | `/api/v2/pagstream/subscriptions…`, `…/recurrences…`, `…/shippings`, `/products`, `/charges` (24 operações) |
 | PagStream v1 | `/api/pagstream/subscription/add`, `subscription/item/add\|update\|delete` |
-| OAuth (PagBrasil.JS) | `/api/oauth/token` — via `Bank::PagBrasil->auth($i)` |
+| OAuth (PagBrasil.JS) | `/api/oauth/token` — via `PagBrasil::make()->auth($i)` |
 
 Pontos que não estão óbvios na doc da PagBrasil:
 
@@ -193,14 +292,17 @@ vendor/bin/pest
 
 ```
 src/
-  Bank.php                 entrypoint (enum) → BankConnector
-  Contracts/               BankIntegration, BankConnector, DTOInterface, Endpoints/*
+  Bank.php                 enum dos bancos → BankConnector
+  Gateway.php              enum dos gateways → GatewayConnector
+  Contracts/               BankIntegration, BankConnector, GatewayConnector, DTOInterface, Endpoints/*
   Common/                  AutoHydrate, CastToArray, attributes, HttpMethod
   Support/                 AuthToken, ClientCertificate, MtlsOptions, PrivateKeyJwt
   Exceptions/              BankAuthenticationException, BankRequestException
-  Itau/  Bradesco/         Support (OAuth/HttpClientFactory/TokenRefresher),
+  Banks/                   um diretório por banco:
+    Itau/ Bradesco/ Inter/ Support (OAuth/HttpClientFactory/TokenRefresher),
                            Bases/BaseMethods, Endpoints/*, DTO/Response/*
-  PagBrasil/               Support (Signature HMAC, ParsedResponse XML/JSON/texto),
+  Gateways/                um diretório por gateway:
+    PagBrasil/             Support (Signature HMAC, ParsedResponse XML/JSON/texto),
                            Bases/FormMethods (API clássica) + RestMethods (PagStream v2),
                            Endpoints/*, Webhooks/WebhookVerifier, Reconciliation/SettlementReport
   Cnab/                    CnabType, Layout, Remessa, Retorno, DTO

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
+use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
 use SistemAtc\Banks\Exceptions\PagBrasilRequestException;
-use SistemAtc\Banks\PagBrasil\DTO\Response\PagStream\Subscription;
-use SistemAtc\Banks\PagBrasil\Enums\SubscriptionStatus;
+use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\PagStream\Subscription;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\SubscriptionStatus;
 use SistemAtc\Banks\Tests\Fakes\FakePagBrasilIntegration;
 
 function pbStream()
 {
-    return Bank::PagBrasil->pagStream(new FakePagBrasilIntegration(signatureKey: null));
+    return PagBrasil::make()->pagStream(new FakePagBrasilIntegration(signatureKey: null));
 }
 
 /** @return array<string, mixed> */

@@ -9,8 +9,8 @@ namespace SistemAtc\Banks\Contracts\Endpoints;
  * CNPJ da empresa, prontos pra virar contas a pagar no host.
  *
  * Interface comum a todos os bancos — o consumidor programa contra ela, então
- * Bradesco e Itaú são intercambiáveis (`Bank::Bradesco->dda()` /
- * `Bank::Itau->dda()` devolvem ambos um DdaEndpoint).
+ * Bradesco e Itaú são intercambiáveis (`Bradesco::make()->dda()` /
+ * `Itau::make()->dda()` devolvem ambos um DdaEndpoint).
  */
 interface DdaEndpoint
 {

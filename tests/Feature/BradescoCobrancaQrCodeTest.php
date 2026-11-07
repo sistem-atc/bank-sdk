@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bradesco\DTO\Response\CobrancaQrCode\AlteracaoBoletoQrCode;
-use SistemAtc\Banks\Bradesco\DTO\Response\CobrancaQrCode\BoletoQrCodeGerado;
-use SistemAtc\Banks\Bradesco\DTO\Response\CobrancaQrCode\ListaBoletosLiquidados;
-use SistemAtc\Banks\Bradesco\DTO\Response\CobrancaQrCode\LocationReservada;
-use SistemAtc\Banks\Bradesco\DTO\Response\CobrancaQrCode\TituloLiquidado;
-use SistemAtc\Banks\Bradesco\DTO\Response\CobrancaQrCode\TituloQrCode;
-use SistemAtc\Banks\Bradesco\Endpoints\CobrancaQrCode\CobrancaQrCodeMethods;
-use SistemAtc\Banks\Bradesco\Support\BradescoHosts;
-use SistemAtc\Banks\Bradesco\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\CobrancaQrCode\AlteracaoBoletoQrCode;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\CobrancaQrCode\BoletoQrCodeGerado;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\CobrancaQrCode\ListaBoletosLiquidados;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\CobrancaQrCode\LocationReservada;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\CobrancaQrCode\TituloLiquidado;
+use SistemAtc\Banks\Banks\Bradesco\DTO\Response\CobrancaQrCode\TituloQrCode;
+use SistemAtc\Banks\Banks\Bradesco\Endpoints\CobrancaQrCode\CobrancaQrCodeMethods;
+use SistemAtc\Banks\Banks\Bradesco\Support\BradescoHosts;
+use SistemAtc\Banks\Banks\Bradesco\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /**

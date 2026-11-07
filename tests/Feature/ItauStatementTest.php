@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Itau\DTO\Response\Statement\BalancesResponse;
-use SistemAtc\Banks\Itau\DTO\Response\Statement\InterestBearingIncome;
-use SistemAtc\Banks\Itau\DTO\Response\Statement\JudicialOrdersResponse;
-use SistemAtc\Banks\Itau\DTO\Response\Statement\StatementEvent;
-use SistemAtc\Banks\Itau\DTO\Response\Statement\StatementResponse;
-use SistemAtc\Banks\Itau\Endpoints\Statement\StatementMethods;
-use SistemAtc\Banks\Itau\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Statement\BalancesResponse;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Statement\InterestBearingIncome;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Statement\JudicialOrdersResponse;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Statement\StatementEvent;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\Statement\StatementResponse;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Statement\StatementMethods;
+use SistemAtc\Banks\Banks\Itau\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /** @param array<string, mixed> $settings */

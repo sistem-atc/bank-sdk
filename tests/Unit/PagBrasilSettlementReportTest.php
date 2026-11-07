@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use SistemAtc\Banks\PagBrasil\Enums\OrderStatus;
-use SistemAtc\Banks\PagBrasil\Enums\PaymentMethod;
-use SistemAtc\Banks\PagBrasil\Reconciliation\SettlementReport;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\OrderStatus;
+use SistemAtc\Banks\Gateways\PagBrasil\Enums\PaymentMethod;
+use SistemAtc\Banks\Gateways\PagBrasil\Reconciliation\SettlementReport;
 
 // Fixture = o CSV de exemplo publicado pela PagBrasil na doc "Reconciliation".
 function pbSettlement(): array

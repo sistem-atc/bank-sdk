@@ -3,16 +3,16 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Itau\Endpoints\PixAutomatico\CobrancaRecorrenteMethods;
-use SistemAtc\Banks\Itau\Endpoints\PixAutomatico\QrCodeMethods;
-use SistemAtc\Banks\Itau\Endpoints\PixAutomatico\RecorrenciaMethods;
-use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\Cobranca;
-use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\CobrancaRecorrente;
-use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\CobrancaRecorrenteList;
-use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\Recorrencia;
-use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\RecorrenciaList;
-use SistemAtc\Banks\Itau\DTO\Response\PixAutomatico\SolicitacaoRecorrencia;
-use SistemAtc\Banks\Itau\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Itau\Endpoints\PixAutomatico\CobrancaRecorrenteMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\PixAutomatico\QrCodeMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\PixAutomatico\RecorrenciaMethods;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\PixAutomatico\Cobranca;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\PixAutomatico\CobrancaRecorrente;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\PixAutomatico\CobrancaRecorrenteList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\PixAutomatico\Recorrencia;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\PixAutomatico\RecorrenciaList;
+use SistemAtc\Banks\Banks\Itau\DTO\Response\PixAutomatico\SolicitacaoRecorrencia;
+use SistemAtc\Banks\Banks\Itau\Support\HttpClientFactory;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 function pixAutoAuthed(): FakeBankIntegration

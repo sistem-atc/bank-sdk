@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Http;
-use SistemAtc\Banks\Bank;
-use SistemAtc\Banks\Itau\Endpoints\Bolecode\BolecodeMethods;
-use SistemAtc\Banks\Itau\Endpoints\Boletos\BoletosConsultaMethods;
-use SistemAtc\Banks\Itau\Endpoints\Boletos\BoletosMethods;
-use SistemAtc\Banks\Itau\Endpoints\PixAutomatico\QrCodeMethods;
-use SistemAtc\Banks\Itau\Endpoints\RecebimentosPix\CobrancaImediataMethods;
-use SistemAtc\Banks\Itau\Endpoints\SaqueTroco\PontosAtendimentoMethods;
+use SistemAtc\Banks\Banks\Itau\Itau;
+use SistemAtc\Banks\Banks\Bradesco\Bradesco;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Bolecode\BolecodeMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Boletos\BoletosConsultaMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\Boletos\BoletosMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\PixAutomatico\QrCodeMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\RecebimentosPix\CobrancaImediataMethods;
+use SistemAtc\Banks\Banks\Itau\Endpoints\SaqueTroco\PontosAtendimentoMethods;
 use SistemAtc\Banks\Tests\Fakes\FakeBankIntegration;
 
 /** Integração autenticada apontando pra PRODUÇÃO (pra checar os hosts reais). */
@@ -27,12 +28,12 @@ function itauProd(): FakeBankIntegration
 it('expoe os produtos do Itau pela fachada do enum', function () {
     $i = itauProd();
 
-    expect(Bank::Itau->boletos($i)->emissao())->toBeInstanceOf(BoletosMethods::class)
-        ->and(Bank::Itau->boletos($i)->consulta())->toBeInstanceOf(BoletosConsultaMethods::class)
-        ->and(Bank::Itau->recebimentosPix($i)->cobImediata())->toBeInstanceOf(CobrancaImediataMethods::class)
-        ->and(Bank::Itau->pixAutomatico($i)->qrCode())->toBeInstanceOf(QrCodeMethods::class)
-        ->and(Bank::Itau->bolecode($i))->toBeInstanceOf(BolecodeMethods::class)
-        ->and(Bank::Itau->saqueTroco($i)->pontos())->toBeInstanceOf(PontosAtendimentoMethods::class);
+    expect(Itau::make()->boletos($i)->emissao())->toBeInstanceOf(BoletosMethods::class)
+        ->and(Itau::make()->boletos($i)->consulta())->toBeInstanceOf(BoletosConsultaMethods::class)
+        ->and(Itau::make()->recebimentosPix($i)->cobImediata())->toBeInstanceOf(CobrancaImediataMethods::class)
+        ->and(Itau::make()->pixAutomatico($i)->qrCode())->toBeInstanceOf(QrCodeMethods::class)
+        ->and(Itau::make()->bolecode($i))->toBeInstanceOf(BolecodeMethods::class)
+        ->and(Itau::make()->saqueTroco($i)->pontos())->toBeInstanceOf(PontosAtendimentoMethods::class);
 });
 
 it('resolve o HOST correto de cada produto (nao ha host unico no Itau)', function () {
@@ -40,34 +41,32 @@ it('resolve o HOST correto de cada produto (nao ha host unico no Itau)', functio
     Http::fake(['*' => Http::response(['data' => []])]);
 
     // Extrato tem subdominio proprio.
-    Bank::Itau->statement($i)->saldos();
+    Itau::make()->statement($i)->saldos();
     Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://account-statement.api.itau.com/'));
 
     // Recebimentos Pix (regulatorio Bacen) roda no pix-pj.
-    Bank::Itau->recebimentosPix($i)->cobImediata()->listar();
+    Itau::make()->recebimentosPix($i)->cobImediata()->listar();
     Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://pix-pj.api.itau.com/regulatorio-pix/v2/cob'));
 
     // Consulta de boleto fica num host distinto da emissao.
-    Bank::Itau->boletos($i)->consulta()->consultarDetalhe('1', '109', '00000001');
+    Itau::make()->boletos($i)->consulta()->consultarDetalhe('1', '109', '00000001');
     Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://secure.api.cloud.itau.com.br/boletoscash/v2'));
 
     // SISPAG permanece no host padrao.
-    Bank::Itau->payments($i)->listar();
+    Itau::make()->payments($i)->listar();
     Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://api.itau.com.br/sispag/v1/pagamentos_sispag'));
 
     // QR Code do Pix Automatico tem host proprio, diferente da recorrencia.
-    Bank::Itau->pixAutomatico($i)->qrCode()->consultar('abc');
+    Itau::make()->pixAutomatico($i)->qrCode()->consultar('abc');
     Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://recebimentos-pix.api.itau.com/'));
 });
 
-it('recusa produto exclusivo do Itau quando o banco e outro', function () {
-    $i = itauProd();
-
-    expect(fn () => Bank::Bradesco->recebimentosPix($i))
-        ->toThrow(BadMethodCallException::class, 'exclusivo do Itaú');
+it('produto exclusivo do Itau nem existe no connector de outro banco', function () {
+    expect(method_exists(Bradesco::class, 'recebimentosPix'))->toBeFalse()
+        ->and(method_exists(Itau::class, 'recebimentosPix'))->toBeTrue();
 });
 
 it('recusa DDA no Itau em vez de chutar um endpoint inexistente', function () {
-    expect(fn () => Bank::Itau->dda(itauProd()))
+    expect(fn () => Itau::make()->dda(itauProd()))
         ->toThrow(BadMethodCallException::class, 'não há API de DDA');
 });
