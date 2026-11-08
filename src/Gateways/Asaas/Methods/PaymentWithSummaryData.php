@@ -1,0 +1,84 @@
+<?php
+
+namespace SistemAtc\Banks\Gateways\Asaas\Methods;
+
+use SistemAtc\Banks\Gateways\Asaas\Enums\HttpMethod;
+use SistemAtc\Banks\Gateways\Asaas\Bases\BaseMethods;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Payment\ConfirmCashRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Payment\ListPaymentRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Payment\RefundPaymentRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Payment\CreatePaymentRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Payment\CreditCardPaymentRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Response\PaymentWithSummaryData\PaymentWithSummaryResponseDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Response\PaymentWithSummaryData\DeletePaymentSummaryResponseDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Response\PaymentWithSummaryData\ListPaymentWithSummaryResponseDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Response\PaymentWithSummaryData\PaymentWithSummaryCreditCardResponseDTO;
+
+class PaymentWithSummaryData extends BaseMethods
+{
+    public function createNewPaymentWithSummaryDataResponse(CreatePaymentRequestDTO $data): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/lean/payments", $data);
+        return PaymentWithSummaryResponseDTO::fromArray($response);
+    }
+    
+    public function listPaymentsWithSummaryData(ListPaymentRequestDTO $data): ListPaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::GET, "/lean/payments", $data);
+        return ListPaymentWithSummaryResponseDTO::fromArray($response);
+    }
+    
+    public function createNewPaymentWithCreditCardWithSummaryDataInResponse(CreditCardPaymentRequestDTO $data): PaymentWithSummaryCreditCardResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/lean/payments", $data);
+        return PaymentWithSummaryCreditCardResponseDTO::fromArray($response);
+    }
+    
+    public function capturePaymentWithPreAuthorizationWithSummaryDataInResponse(string $id): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/lean/payments/{$id}/captureAuthorizedPayment");
+        return PaymentWithSummaryResponseDTO::fromArray($response); 
+    }
+    
+    public function retrieveSinglePaymentWithSummaryData(string $id): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::GET, "/lean/payments/{$id}");
+        return PaymentWithSummaryResponseDTO::fromArray($response); 
+    }
+    
+    public function updateExistingPaymentWithSummaryDataInResponse(string $id): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::PUT, "/lean/payments/{$id}");
+        return PaymentWithSummaryResponseDTO::fromArray($response); 
+    }
+    
+    public function deletePaymentWithSummaryData(string $id): DeletePaymentSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::DELETE, "/lean/payments/{$id}");
+        return DeletePaymentSummaryResponseDTO::fromArray($response);
+    }
+    
+    public function restoreRemovedPaymentWithSummaryDataInResponse(string $id): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/lean/payments/{$id}/restore");
+        return PaymentWithSummaryResponseDTO::fromArray($response); 
+    }
+    
+    public function refundPaymentWithSummaryDataInResponse(string $id, RefundPaymentRequestDTO $data): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/lean/payments/{$id}/refund", $data);
+        return PaymentWithSummaryResponseDTO::fromArray($response); 
+    }
+    
+    public function confirmCashReceiptWithSummaryDataInResponse(string $id, ConfirmCashRequestDTO $data): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/lean/payments/{$id}/receiveInCash", $data);
+        return PaymentWithSummaryResponseDTO::fromArray($response); 
+    }
+    
+    public function undoCashReceiptConfirmationWithSummaryDataInResponse(string $id): PaymentWithSummaryResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/lean/payments/{$id}/undoReceivedInCash");
+        return PaymentWithSummaryResponseDTO::fromArray($response); 
+    }
+}

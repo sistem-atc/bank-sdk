@@ -1,7 +1,7 @@
 # sistem-atc/bank-sdk
 
-SDK PHP unificado de integração bancária — **Bradesco**, **Itaú** e **Inter PJ** — e do
-gateway de pagamento **PagBrasil**. Segue o
+SDK PHP unificado de integração bancária — **Bradesco**, **Itaú** e **Inter PJ** — e dos
+gateways de pagamento **Asaas** e **PagBrasil**. Segue o
 mesmo molde do [`sistem-atc/marketplace-sdk`](https://github.com/sistem-atc/marketplace-sdk):
 enums de identificação, connectors por banco/gateway, grupos de métodos por domínio, DTOs tipados e credenciais
 fornecidas pelo host via contract.
@@ -11,7 +11,8 @@ cobrança (boleto e Pix), recebimentos Pix (arranjo regulatório Bacen),
 pagamentos (SISPAG) e CNAB 240/400. Da PagBrasil, cobre a API inteira:
 pedidos (cartão, Débito Flash, boleto, Pix), Link de Pagamento, Pix
 Automático, Payout, assinaturas PagStream, IPN/webhooks e o relatório de
-liquidação.
+liquidação. Do Asaas, cobra a API v3 inteira (32 grupos de métodos, vindos do
+`sistem_atc/asaas-laravel`).
 
 ## Instalação
 
@@ -272,16 +273,72 @@ nginx).
 
 | Config (`banks.webhooks`) | Env | Padrão |
 |---|---|---|
-| `routes` | `BANKS_WEBHOOK_ROUTES` | `inter` |
+| `routes` | `BANKS_WEBHOOK_ROUTES` | `inter,asaas` |
 | `prefix` | `BANKS_WEBHOOK_PREFIX` | `api/webhooks/banks` |
 | `base_url` | `BANKS_WEBHOOK_BASE_URL` | `app.url` |
 | `inter.client_verify_header` | `BANKS_WEBHOOK_INTER_CLIENT_VERIFY_HEADER` | `X-SSL-Client-Verify` (vazio desliga) |
+
+**Asaas**: o webhook é cadastrado no painel do Asaas (Integrações →
+Webhooks) com a URL `{prefix}/asaas/{integração}/eventos`
+(`WebhookUrl::for('asaas', $i, AsaasWebhookReceiver::TIPO)`) e um token de
+autenticação. O Asaas manda todos os eventos nessa URL com o token no
+cabeçalho `asaas-access-token`; o SDK compara com o `getWebhookToken()` da
+integração. Para isso o host registra um `WebhookIntegrationResolver`, que
+devolve a integração pelo id da URL — sem ele a rota responde 503. O `tipo`
+do evento entregue ao host é o evento do payload (`PAYMENT_RECEIVED`…); o DTO
+tipado sai de `AsaasWebhookPayload::map($evento->payload)`.
+
+```php
+$this->app->bind(WebhookIntegrationResolver::class, fn () => new class implements WebhookIntegrationResolver {
+    public function resolve(string $bank, string $integrationId): ?BankIntegration
+    {
+        return BankIntegration::query()->find($integrationId); // do banco certo e ativa
+    }
+});
+```
 
 Itaú e Bradesco entram no mesmo mecanismo com um `WebhookReceiver` próprio
 (registrado em `WebhookReceivers`) quando o recebimento deles for implementado;
 banco que conferir origem por certificado implementa também
 `RequiresClientCertificate` e ganha o `banks:webhooks-nginx` de graça. A PagBrasil continua com o
 `WebhookVerifier` (a URL dela já está cadastrada no host).
+
+## Asaas
+
+Gateway de cobrança (boleto, Pix, cartão, assinaturas, parcelamentos, split,
+subcontas, transferências, NFS-e, negativação). Veio do pacote
+`sistem_atc/asaas-laravel` 2.0.2 com os mesmos Methods e DTOs; mudou a
+entrada e a credencial:
+
+| asaas-laravel | bank-sdk |
+|---|---|
+| `Asaas::payment()` (facade, config global) | `Asaas::make()->payment($integration)` |
+| `SistemAtc\Asaas\…` | `SistemAtc\Banks\Gateways\Asaas\…` (`Enum` → `Enums`) |
+| `ASAAS_ACCESS_TOKEN` / `ASAAS_ENVIRONMENT` | `AsaasIntegration::getApiKey()` / `isSandbox()` |
+| rota `api/asaas-events` + job + handlers + eventos por tipo | rota do SDK + `BankWebhookReceived` + `AsaasWebhookPayload::map()` |
+| idempotência em cache | do host (INSERT-first com chave única no payload) |
+
+```php
+use SistemAtc\Banks\Gateways\Asaas\Asaas;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Payment\CreatePaymentRequestDTO;
+
+$cobranca = Asaas::make()->payment($integration)->createNewPayment(CreatePaymentRequestDTO::fromArray([
+    'customer' => 'cus_G7Dvo4iphUNk',
+    'billingType' => 'PIX',
+    'value' => 129.90,
+    'dueDate' => '2026-11-30',
+]));
+
+Asaas::make()->financialTransaction($integration);  // extrato
+Asaas::make()->transfer($integration);              // TED / Pix de saída
+```
+
+A integração implementa `SistemAtc\Banks\Contracts\AsaasIntegration`:
+`getApiKey()` (chave de API da conta, cabeçalho `access_token`) e
+`getWebhookToken()` (token do webhook cadastrado no painel). Hosts:
+`banks.asaas.base_url.production` (`https://api.asaas.com/v3`) e `.sandbox`
+(`https://api-sandbox.asaas.com/v3`). A assinatura de cada método está em
+[`docs/asaas/`](docs/asaas).
 
 ## PagBrasil
 
@@ -381,7 +438,8 @@ vendor/bin/pest
 src/
   Bank.php                 enum dos bancos → BankConnector
   Gateway.php              enum dos gateways → GatewayConnector
-  Contracts/               BankIntegration, BankConnector, GatewayConnector, DTOInterface, Endpoints/*
+  Contracts/               BankIntegration (+ PagBrasil/AsaasIntegration), BankConnector, GatewayConnector,
+                           WebhookIntegrationResolver, DTOInterface, Endpoints/*
   Common/                  AutoHydrate, CastToArray, attributes, HttpMethod
   Support/                 AuthToken, ClientCertificate, MtlsOptions, PrivateKeyJwt
   Exceptions/              BankAuthenticationException, BankRequestException
@@ -389,12 +447,16 @@ src/
     Itau/ Bradesco/ Inter/ Support (OAuth/HttpClientFactory/TokenRefresher),
                            Bases/BaseMethods, Endpoints/*, DTO/Response/*
   Gateways/                um diretório por gateway:
+    Asaas/                 Support/HttpClientFactory (chave de API), Bases/BaseMethods, Methods/* (32),
+                           DTO/Request|Response|Shared|Webhook, Enums/*, Webhooks/AsaasWebhookPayload
     PagBrasil/             Support (Signature HMAC, ParsedResponse XML/JSON/texto),
                            Bases/FormMethods (API clássica) + RestMethods (PagStream v2),
                            Endpoints/*, Webhooks/WebhookVerifier, Reconciliation/SettlementReport
   Cnab/                    CnabType, Layout, Remessa, Retorno, DTO
-  Webhooks/                WebhookUrl, BankWebhookReceived (evento), Receivers/* por banco
+  Webhooks/                WebhookUrl, BankWebhookReceived (evento), Receivers/* por banco/gateway
   Http/Controllers/        BankWebhookController (rota registrada pelo ServiceProvider)
+  Console/                 banks:webhooks-nginx
+docs/asaas/                assinatura dos métodos de cada grupo do Asaas
 ```
 
 ## Licença

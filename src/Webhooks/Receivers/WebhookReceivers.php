@@ -10,6 +10,7 @@ final class WebhookReceivers
     public static function for(string $bank): ?WebhookReceiver
     {
         return match ($bank) {
+            'asaas' => new AsaasWebhookReceiver(),
             'inter' => new InterWebhookReceiver(),
             default => null,
         };

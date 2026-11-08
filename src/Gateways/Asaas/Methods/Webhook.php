@@ -1,0 +1,51 @@
+<?php
+
+namespace SistemAtc\Banks\Gateways\Asaas\Methods;
+
+use SistemAtc\Banks\Gateways\Asaas\Enums\HttpMethod;
+use SistemAtc\Banks\Gateways\Asaas\Bases\BaseMethods;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Webhook\CreateRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Response\Webhook\WebhookResponseDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Webhook\ListWebhooksRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Request\Webhook\UpdateWebhookRequestDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Response\Webhook\ListWebhookResponseDTO;
+use SistemAtc\Banks\Gateways\Asaas\DTO\Response\Webhook\DeleteWebhookResponseDTO;
+
+class Webhook extends BaseMethods
+{
+    public function createNewWebhook(CreateRequestDTO $data): WebhookResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::POST, "/webhooks", $data);
+        return WebhookResponseDTO::fromArray($response);
+    }
+
+    public function listWebhooks(ListWebhooksRequestDTO $data): ListWebhookResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::GET, '/webhooks', $data);
+        return ListWebhookResponseDTO::fromArray($response);
+    }
+    
+    public function retrieveSingleWebhook(string $id): WebhookResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::GET, "/webhooks/{$id}");
+        return WebhookResponseDTO::fromArray($response);
+    }
+    
+    public function updateExistingWebhook(string $id, UpdateWebhookRequestDTO $data): WebhookResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::PUT, "/webhooks/{$id}", $data);
+        return WebhookResponseDTO::fromArray($response);
+    }
+    
+    public function removeWebhook(string $id): DeleteWebhookResponseDTO
+    {
+        $response = $this->makeRequest(HttpMethod::DELETE, "/webhooks/{$id}");
+        return DeleteWebhookResponseDTO::fromArray($response);
+    }
+    
+    public function removeWebhookBackoff(string $id): bool
+    {
+        $this->makeRequest(HttpMethod::POST, "/webhooks/{$id}/removeBackoff");
+        return true;
+    }
+}

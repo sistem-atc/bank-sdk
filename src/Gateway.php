@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SistemAtc\Banks;
 
 use SistemAtc\Banks\Contracts\GatewayConnector;
+use SistemAtc\Banks\Gateways\Asaas\Asaas;
 use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
 
 /**
@@ -20,11 +21,13 @@ use SistemAtc\Banks\Gateways\PagBrasil\PagBrasil;
  */
 enum Gateway: string
 {
+    case Asaas = 'asaas';
     case PagBrasil = 'pagbrasil';
 
     public function connector(): GatewayConnector
     {
         return match ($this) {
+            self::Asaas => Asaas::make(),
             self::PagBrasil => PagBrasil::make(),
         };
     }

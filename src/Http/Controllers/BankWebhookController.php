@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Event;
 use SistemAtc\Banks\Webhooks\BankWebhookReceived;
+use SistemAtc\Banks\Webhooks\Receivers\WebhookReceiverNotConfigured;
 use SistemAtc\Banks\Webhooks\Receivers\WebhookReceivers;
 
 /**
@@ -18,8 +19,9 @@ use SistemAtc\Banks\Webhooks\Receivers\WebhookReceivers;
  * BankWebhookReceived.
  *
  * Respostas: 200 gravado · 401 origem não confirmada · 404 banco/tipo
- * desconhecido · 422 corpo que não é JSON · 503 host sem listener · 500 se o
- * listener falhar (o banco reenvia).
+ * desconhecido · 422 corpo que não é JSON · 503 host sem listener (ou sem o
+ * WebhookIntegrationResolver que o banco exige) · 500 se o listener falhar
+ * (o banco reenvia).
  */
 final class BankWebhookController extends Controller
 {
@@ -38,8 +40,12 @@ final class BankWebhookController extends Controller
             return response()->json(['error' => 'Webhook desconhecido'], 404);
         }
 
-        if (! $receiver->authenticate($request)) {
-            return response()->json(['error' => 'Origem não confirmada'], 401);
+        try {
+            if (! $receiver->authenticate($request, $integration)) {
+                return response()->json(['error' => 'Origem não confirmada'], 401);
+            }
+        } catch (WebhookReceiverNotConfigured) {
+            return response()->json(['error' => 'Recebimento não configurado'], 503);
         }
 
         $raw = (string) $request->getContent();
@@ -56,7 +62,7 @@ final class BankWebhookController extends Controller
         event(new BankWebhookReceived(
             bank: $bank,
             integrationId: $integration,
-            tipo: $tipo,
+            tipo: $receiver->tipo($tipo, $payload),
             payload: $payload,
             headers: $receiver->headers($request),
             rawBody: $raw,

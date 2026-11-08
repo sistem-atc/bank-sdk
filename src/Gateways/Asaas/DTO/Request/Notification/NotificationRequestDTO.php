@@ -1,0 +1,25 @@
+<?php
+
+namespace SistemAtc\Banks\Gateways\Asaas\DTO\Request\Notification;
+
+use SistemAtc\Banks\Gateways\Asaas\Traits\AutoHydrate;
+use SistemAtc\Banks\Gateways\Asaas\Traits\CastToArray;
+use SistemAtc\Banks\Gateways\Asaas\Enums\PaymentOverdue;
+use SistemAtc\Banks\Gateways\Asaas\Contracts\DTOInterface;
+
+class NotificationRequestDTO implements DTOInterface
+{
+
+    use CastToArray, AutoHydrate;
+
+    public function __construct(
+        public readonly ?bool $enabled = null,
+        public readonly ?bool $emailEnabledForProvider = null,
+        public readonly ?bool $smsEnabledForProvider = null,
+        public readonly ?bool $emailEnabledForCustomer = null,
+        public readonly ?bool $smsEnabledForCustomer = null,
+        public readonly ?bool $phoneCallEnabledForCustomer = null,
+        public readonly ?bool $whatsappEnabledForCustomer = null,
+        public readonly ?PaymentOverdue $scheduleOffset = null,
+    ) {}
+}

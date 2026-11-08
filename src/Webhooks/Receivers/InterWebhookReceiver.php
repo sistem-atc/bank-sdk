@@ -32,7 +32,7 @@ final class InterWebhookReceiver implements RequiresClientCertificate, WebhookRe
         return TipoWebhook::tryFrom($tipo) !== null;
     }
 
-    public function authenticate(Request $request): bool
+    public function authenticate(Request $request, string $integrationId): bool
     {
         $header = $this->clientVerifyHeader();
 
@@ -41,6 +41,11 @@ final class InterWebhookReceiver implements RequiresClientCertificate, WebhookRe
         }
 
         return $request->header($header) === 'SUCCESS';
+    }
+
+    public function tipo(string $tipoDaUrl, array $payload): string
+    {
+        return $tipoDaUrl;
     }
 
     public function headers(Request $request): array

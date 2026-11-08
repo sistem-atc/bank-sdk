@@ -177,6 +177,17 @@ return [
         'scopes' => \SistemAtc\Banks\Banks\Inter\Enums\Escopo::values(),
     ],
 
+    'asaas' => [
+        // Asaas (gateway de cobrança: boleto, Pix, cartão, assinaturas,
+        // split, transferências). Hosts da documentação oficial
+        // (docs.asaas.com); a chave de API e o token do webhook são da conta
+        // de cada empresa (AsaasIntegration).
+        'base_url' => [
+            'production' => env('ASAAS_BASE_URL', 'https://api.asaas.com/v3'),
+            'sandbox' => env('ASAAS_BASE_URL_SANDBOX', 'https://api-sandbox.asaas.com/v3'),
+        ],
+    ],
+
     'pagbrasil' => [
         // Hosts da PagBrasil — são DA PAGBRASIL (iguais pra toda empresa),
         // por isso moram no SDK. Quem escolhe o ambiente é a integração
@@ -219,7 +230,7 @@ return [
     | ($ssl_client_verify). Só SUCCESS passa. Vazio desliga a conferência.
     */
     'webhooks' => [
-        'routes' => array_values(array_filter(array_map('trim', explode(',', (string) env('BANKS_WEBHOOK_ROUTES', 'inter'))))),
+        'routes' => array_values(array_filter(array_map('trim', explode(',', (string) env('BANKS_WEBHOOK_ROUTES', 'inter,asaas'))))),
         'prefix' => env('BANKS_WEBHOOK_PREFIX', 'api/webhooks/banks'),
         'middleware' => ['api'],
         'base_url' => env('BANKS_WEBHOOK_BASE_URL'),

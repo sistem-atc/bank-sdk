@@ -1,0 +1,36 @@
+<?php
+
+namespace SistemAtc\Banks\Gateways\Asaas\DTO\Request\Customer;
+
+use SistemAtc\Banks\Gateways\Asaas\Traits\AutoHydrate;
+use SistemAtc\Banks\Gateways\Asaas\Traits\CastToArray;
+use SistemAtc\Banks\Gateways\Asaas\Contracts\DTOInterface;
+
+final class CustomerRequestDTO implements DTOInterface
+{
+
+    use CastToArray, AutoHydrate;
+
+    public function __construct(
+        public readonly string $name,
+        public readonly string $cpfCnpj,
+        public readonly ?string $email = null,
+        public readonly ?string $phone = null,
+        public readonly ?string $mobilePhone = null,
+        public readonly ?string $address = null,
+        public readonly ?string $addressNumber = null,
+        public readonly ?string $complement = null,
+        public readonly ?string $province = null,
+        public readonly ?string $postalCode = null,
+        public readonly ?string $externalReference = null,
+        public readonly ?bool $notificationDisabled = null,
+        public readonly ?string $additionalEmails = null,
+        public readonly ?string $municipalInscription = null,
+        public readonly ?string $stateInscription = null,
+        public readonly ?string $observations = null,
+        public readonly ?string $groupName = null,
+        public readonly ?string $company = null,
+        public readonly ?bool $foreignCustomer = null,
+        public readonly ?string $asaas_id = null,
+    ) {}
+}

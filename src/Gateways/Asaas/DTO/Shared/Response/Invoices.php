@@ -1,0 +1,44 @@
+<?php
+
+namespace SistemAtc\Banks\Gateways\Asaas\DTO\Shared\Response;
+
+use SistemAtc\Banks\Gateways\Asaas\Enums\TypeInvoice;
+use SistemAtc\Banks\Gateways\Asaas\Enums\InvoiceStatus;
+use SistemAtc\Banks\Gateways\Asaas\Traits\AutoHydrate;
+use SistemAtc\Banks\Gateways\Asaas\Traits\CastToArray;
+use SistemAtc\Banks\Gateways\Asaas\Contracts\DTOInterface;
+use \SistemAtc\Banks\Gateways\Asaas\DTO\Shared\Common\Taxes;
+
+class Invoices implements DTOInterface
+{
+
+    use CastToArray, AutoHydrate;
+
+    public function __construct(
+        public readonly ?string $object = null,
+        public readonly ?string $id = null,
+        public readonly ?InvoiceStatus $status = null,
+        public readonly ?string $customer = null,
+        public readonly ?string $payment = null,
+        public readonly ?string $installment = null,
+        public readonly ?TypeInvoice $type = null,
+        public readonly ?string $statusDescription = null,
+        public readonly ?string $serviceDescription = null,
+        public readonly ?string $pdfUrl = null,
+        public readonly ?string $xmlUrl = null,
+        public readonly ?string $rpsSerie = null,
+        public readonly ?string $rpsNumber = null,
+        public readonly ?string $number = null,
+        public readonly ?string $validationCode = null,
+        public readonly ?float $value = null,
+        public readonly ?float $deductions = null,
+        public readonly ?string $effectiveDate = null,
+        public readonly ?string $observations = null,
+        public readonly ?string $estimatedTaxesDescription = null,
+        public readonly ?string $externalReference = null,
+        public readonly ?Taxes $taxes = null,
+        public readonly ?string $municipalServiceId = null,
+        public readonly ?string $municipalServiceCode = null,
+        public readonly ?string $municipalServiceName = null,
+    ) {}
+}
