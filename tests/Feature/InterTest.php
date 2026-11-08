@@ -91,6 +91,43 @@ it('reaproveita o token válido: só 1 chamada de token pra várias requests', f
     expect($i->accessToken)->toBe('T');
 });
 
+it('host que NÃO guarda o token: o cache do SDK segura o limite de 5 tokens/min', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        '*/oauth/v2/token' => Http::response(['access_token' => 'T', 'expires_in' => 3600]),
+        '*/banking/v2/saldo*' => Http::response(['disponivel' => 10.5]),
+    ]);
+
+    // Igual ao Bunker: getAccessToken() sempre null, só a validade é gravada.
+    $i = new FakeBankIntegration();
+    $i->hostKeepsToken = false;
+
+    foreach (range(1, 6) as $_) {
+        Inter::make()->banking($i)->extrato()->saldo();
+    }
+
+    Http::assertSentCount(7); // 1 token + 6 saldo
+});
+
+it('401 descarta o token do cache e reautentica uma vez', function () {
+    Http::preventStrayRequests();
+    Http::fake([
+        '*/oauth/v2/token' => Http::sequence()
+            ->push(['access_token' => 'VELHO', 'expires_in' => 3600])
+            ->push(['access_token' => 'NOVO', 'expires_in' => 3600]),
+        '*/banking/v2/saldo*' => Http::sequence()
+            ->push(['title' => 'Unauthorized'], 401)
+            ->push(['disponivel' => 1.0]),
+    ]);
+
+    $i = new FakeBankIntegration();
+    $i->hostKeepsToken = false;
+
+    Inter::make()->banking($i)->extrato()->saldo();
+
+    Http::assertSent(fn (Request $r) => str_contains($r->url(), '/saldo') && $r->hasHeader('Authorization', 'Bearer NOVO'));
+});
+
 it('falha de token vira BankAuthenticationException com o detalhe do Inter', function () {
     Http::preventStrayRequests();
     Http::fake(['*/oauth/v2/token' => Http::response(['title' => 'Forbidden', 'detail' => 'Escopo não autorizado'], 403)]);

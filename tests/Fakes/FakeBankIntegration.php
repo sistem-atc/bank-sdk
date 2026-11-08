@@ -17,6 +17,9 @@ final class FakeBankIntegration implements BankIntegration
 
     public ?int $tokenExpiresAt = null;
 
+    /** false simula host que não persiste o token (o Bunker): getAccessToken() sempre null. */
+    public bool $hostKeepsToken = true;
+
     /** @param array<string, mixed> $settings */
     public function __construct(
         private readonly string $clientId = 'cli',
@@ -49,7 +52,7 @@ final class FakeBankIntegration implements BankIntegration
 
     public function getAccessToken(): ?string
     {
-        return $this->accessToken;
+        return $this->hostKeepsToken ? $this->accessToken : null;
     }
 
     public function getBankSettings(): array

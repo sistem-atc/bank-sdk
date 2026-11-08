@@ -11,6 +11,7 @@ use SistemAtc\Banks\Common\Enums\HttpMethod;
 use SistemAtc\Banks\Contracts\BankIntegration;
 use SistemAtc\Banks\Exceptions\BankRequestException;
 use SistemAtc\Banks\Banks\Inter\Support\HttpClientFactory;
+use SistemAtc\Banks\Banks\Inter\Support\TokenRefresher;
 
 /**
  * Base dos grupos de métodos do Inter: transporte, retry e erro. Os
@@ -55,6 +56,7 @@ abstract class BaseMethods
         // 401/403: o token pode ter sido invalidado antes do expires_in.
         // Reconstrói o cliente (força reautenticação) no MESMO produto e tenta 1×.
         if (in_array($response->status(), [401, 403], true) && $retryAttempt === 0) {
+            TokenRefresher::forget($this->integration);
             $this->integration->updateAccessToken('', 0);
             $this->httpClient = HttpClientFactory::make($this->integration, $this->basePath);
 
