@@ -233,19 +233,19 @@ assinado pela CA dele. Quem confere é o servidor web que termina o TLS, e ele
 repassa o resultado no cabeçalho `X-SSL-Client-Verify`. Sem `SUCCESS` a rota
 responde 401.
 
-A CA vem **dentro do pacote** (`resources/certs/inter-webhook-ca.crt`, o
-`ca.crt` do "Certificado Webhook" do Internet Banking PJ). Ela é pública e a
-mesma para todo correntista: um servidor configurado atende todas as contas
-Inter, e integração nova não pede nada no nginx. O comando abaixo imprime o
-passo a passo de uma instalação do zero (CA, trecho do nginx, conferência),
-com o vencimento de cada certificado:
+A CA não vem no pacote: baixe o `ca.crt` do "Certificado Webhook" no
+Internet Banking PJ e passe o caminho ao comando. Ela é a mesma para todo
+correntista: um servidor configurado atende todas as contas Inter, e
+integração nova não pede nada no nginx. O comando confere o arquivo (PEM
+legível, vencimento de cada certificado — recusa vencido, avisa a menos de 90
+dias) e imprime o passo a passo de uma instalação do zero:
 
 ```bash
-php artisan banks:webhooks-nginx inter --upstream=http://127.0.0.1:8081
+php artisan banks:webhooks-nginx inter --ca-path=/caminho/ca.crt --upstream=http://127.0.0.1:8081
 
-# só o PEM, para instalar (nginx local ou em outra máquina):
-php artisan banks:webhooks-nginx inter --ca | sudo tee /etc/nginx/certs/inter-webhook-ca.crt >/dev/null
-php artisan banks:webhooks-nginx inter --ca | ssh proxy 'sudo tee /etc/nginx/certs/inter-webhook-ca.crt >/dev/null'
+# instalar a CA (nginx local ou em outra máquina):
+sudo install -D -m 644 /caminho/ca.crt /etc/nginx/certs/inter-webhook-ca.crt
+ssh proxy 'sudo tee /etc/nginx/certs/inter-webhook-ca.crt >/dev/null' < /caminho/ca.crt
 ```
 
 O trecho que ele gera, no `server { listen 443 ssl; }` do domínio:
@@ -266,9 +266,9 @@ location / {
 }
 ```
 
-Quando o Inter trocar a CA (a intermediária atual vence em 08/02/2029), sai
-versão nova do pacote com o certificado novo; no servidor, reinstale com
-`--ca` e recarregue o nginx.
+Quando o Inter trocar a CA (a intermediária atual vence em 08/02/2029), baixe
+o arquivo novo, confira com o comando e reinstale no servidor (recarregando o
+nginx).
 
 | Config (`banks.webhooks`) | Env | Padrão |
 |---|---|---|

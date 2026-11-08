@@ -7,27 +7,27 @@ namespace SistemAtc\Banks\Console;
 use Illuminate\Console\Command;
 use SistemAtc\Banks\Webhooks\Receivers\RequiresClientCertificate;
 use SistemAtc\Banks\Webhooks\Receivers\WebhookReceivers;
-use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Imprime o que o servidor web precisa pra receber o webhook de um banco que
- * se autentica por certificado de cliente (hoje, o Inter): o certificado da
- * CA (que vem no pacote), onde instalá-lo e o trecho do nginx.
+ * se autentica por certificado de cliente (hoje, o Inter): onde instalar a CA,
+ * o trecho do nginx e a conferência.
  *
- * Não escreve nada fora do terminal: o nginx costuma estar em outra máquina
- * (proxy) e exige root. Com `--ca` sai só o PEM, pra encadear:
- *
- *   php artisan banks:webhooks-nginx inter --ca | ssh proxy 'sudo tee /etc/nginx/certs/inter-webhook-ca.crt'
+ * A CA não vem no pacote: baixe-a no portal do banco (no Inter, "Certificado
+ * Webhook" do Internet Banking PJ) e passe o caminho em `--ca-path`. O comando
+ * confere o arquivo (PEM legível, vencimento de cada certificado) e não
+ * escreve nada fora do terminal — o nginx costuma estar em outra máquina e
+ * exige root.
  */
 final class WebhooksNginxCommand extends Command
 {
     protected $signature = 'banks:webhooks-nginx
         {bank=inter : Banco da rota de webhook}
+        {--ca-path= : Caminho do certificado da CA baixado no portal do banco (ca.crt)}
         {--upstream= : Destino do proxy_pass (o mesmo do location / do site)}
-        {--ca-dir=/etc/nginx/certs : Pasta do certificado no servidor do nginx}
-        {--ca : Imprime só o certificado da CA (PEM)}';
+        {--ca-dir=/etc/nginx/certs : Pasta do certificado no servidor do nginx}';
 
-    protected $description = 'Mostra o certificado da CA e a configuração do nginx para receber webhooks do banco';
+    protected $description = 'Confere o certificado da CA do banco e mostra a configuração do nginx para receber os webhooks';
 
     /** Avisa quando algum certificado da CA vence em menos que isto. */
     private const AVISO_VENCIMENTO_DIAS = 90;
@@ -49,28 +49,34 @@ final class WebhooksNginxCommand extends Command
             return self::SUCCESS;
         }
 
-        $pem = @file_get_contents($receiver->clientCaPath());
+        $caPath = (string) $this->option('ca-path');
 
-        if ($pem === false || $pem === '') {
-            $this->error('Certificado da CA não encontrado no pacote: '.$receiver->clientCaPath());
+        if ($caPath === '') {
+            $this->error('Informe o certificado da CA do banco: --ca-path=<caminho do ca.crt baixado no portal>.');
 
             return self::FAILURE;
         }
 
-        if ($this->option('ca')) {
-            $this->output->write($pem, false, OutputInterface::OUTPUT_RAW);
+        $pem = is_file($caPath) ? (string) @file_get_contents($caPath) : '';
 
-            return self::SUCCESS;
+        if ($pem === '') {
+            $this->error("Não consegui ler o certificado: {$caPath}.");
+
+            return self::FAILURE;
+        }
+
+        $this->line("<options=bold>Webhook {$bank}: certificado de cliente conferido pelo nginx</>");
+        $this->newLine();
+
+        if (! $this->certificados($pem)) {
+            return self::FAILURE;
         }
 
         $destino = rtrim((string) $this->option('ca-dir'), '/').'/'.$receiver->clientCaFileName();
         $upstream = (string) ($this->option('upstream') ?: 'http://<app>');
         $header = $receiver->clientVerifyHeader();
         $location = '/'.trim((string) config('banks.webhooks.prefix', 'api/webhooks/banks'), '/')."/{$bank}/";
-
-        $this->line("<options=bold>Webhook {$bank}: certificado de cliente conferido pelo nginx</>");
-        $this->newLine();
-        $this->certificados($pem);
+        $origem = escapeshellarg($caPath);
 
         if ($header === '') {
             $this->warn('banks.webhooks.'.$bank.'.client_verify_header está vazio: o app aceita aviso sem conferir a origem.');
@@ -78,15 +84,17 @@ final class WebhooksNginxCommand extends Command
         }
 
         $this->line('<options=bold>1.</> Instale a CA no servidor que termina o HTTPS:');
-        $this->line("   php artisan banks:webhooks-nginx {$bank} --ca | sudo tee {$destino} >/dev/null");
-        $this->line("   (nginx em outra máquina: … --ca | ssh <proxy> 'sudo tee {$destino} >/dev/null')");
+        $this->line("   sudo install -D -m 644 {$origem} {$destino}");
+        $this->line("   (nginx em outra máquina: ssh <proxy> 'sudo install -d -m 755 ".dirname($destino)." && sudo tee {$destino} >/dev/null' < {$origem})");
         $this->newLine();
         $this->line('<options=bold>2.</> No bloco <comment>server { listen 443 ssl; … }</comment> do domínio, antes do <comment>location /</comment>:');
         $this->newLine();
+
         // Linha a linha: cada linha vira uma escrita própria no terminal.
         foreach (explode("\n", $this->trechoServer($destino, $location, $upstream, $header)) as $linha) {
             $this->line($linha);
         }
+
         $this->newLine();
         $this->line('<options=bold>3.</> Dentro do <comment>location /</comment> que já existe, pra ninguém forjar o resultado:');
         $this->line("       proxy_set_header {$header} \"\";");
@@ -125,10 +133,16 @@ final class WebhooksNginxCommand extends Command
         NGINX;
     }
 
-    /** Lista cada certificado do bundle com o vencimento. */
-    private function certificados(string $pem): void
+    /**
+     * Lista cada certificado do bundle com o vencimento. Falso quando o
+     * arquivo não tem certificado legível ou algum já venceu.
+     */
+    private function certificados(string $pem): bool
     {
         preg_match_all('/-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----/s', $pem, $blocos);
+
+        $lidos = 0;
+        $vencido = false;
 
         foreach ($blocos[0] as $bloco) {
             $info = openssl_x509_parse($bloco);
@@ -137,19 +151,31 @@ final class WebhooksNginxCommand extends Command
                 continue;
             }
 
+            $lidos++;
             $cn = trim((string) ($info['subject']['CN'] ?? '?'));
             $vence = (int) ($info['validTo_time_t'] ?? 0);
             $dias = (int) floor(($vence - time()) / 86400);
             $quando = date('d/m/Y', $vence);
 
-            match (true) {
-                $dias < 0 => $this->error("   {$cn}: VENCIDO em {$quando} — baixe o novo no Internet Banking"),
-                $dias < self::AVISO_VENCIMENTO_DIAS => $this->warn("   {$cn}: vence em {$quando} ({$dias} dias)"),
-                default => $this->line("   {$cn}: válido até {$quando}"),
-            };
+            if ($vence < time()) {
+                $vencido = true;
+                $this->error("   {$cn}: VENCIDO em {$quando} — baixe o novo no portal do banco");
+            } elseif ($dias < self::AVISO_VENCIMENTO_DIAS) {
+                $this->warn("   {$cn}: vence em {$quando} ({$dias} dias)");
+            } else {
+                $this->line("   {$cn}: válido até {$quando}");
+            }
+        }
+
+        if ($lidos === 0) {
+            $this->error('O arquivo não tem certificado PEM legível (esperado: -----BEGIN CERTIFICATE-----).');
+
+            return false;
         }
 
         $this->newLine();
+
+        return ! $vencido;
     }
 
     private function baseUrl(): string

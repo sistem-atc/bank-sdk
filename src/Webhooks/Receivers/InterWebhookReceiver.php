@@ -21,9 +21,9 @@ use SistemAtc\Banks\Banks\Inter\Enums\TipoWebhook;
  * `banks.webhooks.inter.client_verify_header` define o cabeçalho; vazio
  * desliga a conferência (só pra ambiente onde outra camada já garante a origem).
  *
- * A CA vem dentro do pacote (`resources/certs/inter-webhook-ca.crt`): é
- * pública e a mesma pra todo correntista. `php artisan banks:webhooks-nginx
- * inter` imprime a configuração do nginx e o certificado.
+ * A CA é a mesma pra todo correntista (um servidor configurado atende todas
+ * as contas). `php artisan banks:webhooks-nginx inter --ca-path=<ca.crt>`
+ * confere o arquivo e imprime a configuração do nginx.
  */
 final class InterWebhookReceiver implements RequiresClientCertificate, WebhookReceiver
 {
@@ -50,11 +50,6 @@ final class InterWebhookReceiver implements RequiresClientCertificate, WebhookRe
         $conta = $request->header('x-conta-corrente');
 
         return $conta === null ? [] : ['x-conta-corrente' => (string) $conta];
-    }
-
-    public function clientCaPath(): string
-    {
-        return dirname(__DIR__, 3).'/resources/certs/inter-webhook-ca.crt';
     }
 
     public function clientVerifyHeader(): string
