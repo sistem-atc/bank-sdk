@@ -123,7 +123,10 @@ carrega a integração da empresa dona da operação.
   certificado), em `{host}/oauth/v2/token`. O token vale 1h e o endpoint de
   token aceita só **5 chamadas por minuto**, então o SDK pede um token com
   todos os escopos da integração (`settings['scopes']`, ou a lista de
-  `banks.inter.scopes`) e o reaproveita. O Inter recusa escopo que não foi
+  `banks.inter.scopes`) e o reaproveita em cache. Os escopos estão no enum
+  `Banks\Inter\Enums\Escopo` (`Escopo::options()` serve direto num select de
+  múltipla escolha); `settings['scopes']` aceita lista de `Escopo`, lista de
+  strings ou string separada por espaço. O Inter recusa escopo que não foi
   marcado no app: informe só os que a aplicação da empresa tem.
   `settings['conta_corrente']` vira o header `x-conta-corrente`, obrigatório
   quando o app está ligado a mais de uma conta.
@@ -195,6 +198,67 @@ $pix->pixRecebido()->devolver($e2eId, 'dev-1', ['valor' => '5.00']);
   então o retry do mesmo título não paga duas vezes.
 - **Pagamento de boleto não tem idempotência no Inter.** Antes de repetir um
   pagamento que deu timeout, consulte com `payments()->listar()`.
+
+## Webhooks
+
+O SDK publica sozinho a rota que recebe os avisos dos bancos e cadastra essa
+mesma URL no banco — como o `marketplace-sdk` faz com os marketplaces.
+
+```
+POST {prefix}/{banco}/{integração}/{tipo}
+https://erp.exemplo.com.br/api/webhooks/banks/inter/42/cobranca
+```
+
+**Cadastro** (Inter): `TipoWebhook` reúne os avisos das três APIs.
+
+```php
+use SistemAtc\Banks\Banks\Inter\Enums\TipoWebhook;
+
+$webhooks = Inter::make()->webhooks($i);
+$webhooks->cadastrar(TipoWebhook::Cobranca);                       // cobrança paga/cancelada/expirada
+$webhooks->cadastrar(TipoWebhook::PixRecebido, chavePix: 'fin@x.com'); // um por chave Pix
+$webhooks->consultar(TipoWebhook::PixPagamento);                   // URL cadastrada ou null
+$webhooks->sincronizar(desejados: ['cobranca', 'boleto-pagamento'], anteriores: ['pix-pagamento']);
+```
+
+**Recebimento**: o aviso chega ao host pelo evento
+`SistemAtc\Banks\Webhooks\BankWebhookReceived` (banco, integração, tipo,
+payload, cabeçalhos como `x-conta-corrente`, corpo bruto). O host registra um
+listener **síncrono** que grava o payload: se ele lançar exceção a rota
+responde 500 e o banco reenvia (o Inter tenta 4 vezes); sem listener a rota
+responde 503, nunca 200.
+
+**Autenticação do Inter**: o Inter chama a URL com certificado de cliente
+assinado pela CA dele (`ca.crt` do "Certificado Webhook" no Internet Banking).
+Quem confere é o servidor web que termina o TLS, e ele repassa o resultado no
+cabeçalho `X-SSL-Client-Verify`. Sem `SUCCESS` a rota responde 401. No nginx:
+
+```nginx
+ssl_client_certificate /etc/nginx/certs/inter-webhook-ca.crt;
+ssl_verify_client optional;
+ssl_verify_depth 3;
+
+location /api/webhooks/banks/inter/ {
+    if ($ssl_client_verify != SUCCESS) { return 403; }
+    proxy_set_header X-SSL-Client-Verify $ssl_client_verify;
+    proxy_pass http://app;
+}
+location / {
+    proxy_set_header X-SSL-Client-Verify "";   # cliente não forja o cabeçalho
+    proxy_pass http://app;
+}
+```
+
+| Config (`banks.webhooks`) | Env | Padrão |
+|---|---|---|
+| `routes` | `BANKS_WEBHOOK_ROUTES` | `inter` |
+| `prefix` | `BANKS_WEBHOOK_PREFIX` | `api/webhooks/banks` |
+| `base_url` | `BANKS_WEBHOOK_BASE_URL` | `app.url` |
+| `inter.client_verify_header` | `BANKS_WEBHOOK_INTER_CLIENT_VERIFY_HEADER` | `X-SSL-Client-Verify` (vazio desliga) |
+
+Itaú e Bradesco entram no mesmo mecanismo com um `WebhookReceiver` próprio
+quando o recebimento deles for implementado. A PagBrasil continua com o
+`WebhookVerifier` (a URL dela já está cadastrada no host).
 
 ## PagBrasil
 
@@ -306,6 +370,8 @@ src/
                            Bases/FormMethods (API clássica) + RestMethods (PagStream v2),
                            Endpoints/*, Webhooks/WebhookVerifier, Reconciliation/SettlementReport
   Cnab/                    CnabType, Layout, Remessa, Retorno, DTO
+  Webhooks/                WebhookUrl, BankWebhookReceived (evento), Receivers/* por banco
+  Http/Controllers/        BankWebhookController (rota registrada pelo ServiceProvider)
 ```
 
 ## Licença

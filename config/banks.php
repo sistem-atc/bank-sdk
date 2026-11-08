@@ -174,20 +174,7 @@ return [
         // Escopos pedidos no token quando a integração não declara os seus em
         // settings['scopes']. O Inter recusa escopo que não foi marcado na
         // tela da aplicação, então o host deve informar só os que o app tem.
-        'scopes' => [
-            'extrato.read',
-            'pagamento-boleto.read', 'pagamento-boleto.write',
-            'pagamento-darf.write',
-            'pagamento-lote.read', 'pagamento-lote.write',
-            'pagamento-pix.read', 'pagamento-pix.write',
-            'webhook-banking.read', 'webhook-banking.write',
-            'boleto-cobranca.read', 'boleto-cobranca.write',
-            'cob.read', 'cob.write', 'cobv.read', 'cobv.write',
-            'lotecobv.read', 'lotecobv.write',
-            'payloadlocation.read', 'payloadlocation.write',
-            'pix.read', 'pix.write',
-            'webhook.read', 'webhook.write',
-        ],
+        'scopes' => \SistemAtc\Banks\Banks\Inter\Enums\Escopo::values(),
     ],
 
     'pagbrasil' => [
@@ -213,4 +200,31 @@ return [
         'verify_response_signature' => (bool) env('PAGBRASIL_VERIFY_RESPONSE_SIGNATURE', true),
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Webhooks (avisos dos bancos)
+    |--------------------------------------------------------------------------
+    |
+    | O SDK registra `POST {prefix}/{banco}/{integração}/{tipo}` para cada banco
+    | em `routes` e entrega o aviso ao host pelo evento
+    | SistemAtc\Banks\Webhooks\BankWebhookReceived. O host precisa de um
+    | listener que grave o payload; sem listener a rota responde 503.
+    |
+    | base_url: host público usado pra montar a URL que vai para o banco
+    | (vazio = app.url).
+    |
+    | inter.client_verify_header: cabeçalho em que o proxy (nginx) informa o
+    | resultado da conferência do certificado de cliente do Inter
+    | ($ssl_client_verify). Só SUCCESS passa. Vazio desliga a conferência.
+    */
+    'webhooks' => [
+        'routes' => array_values(array_filter(array_map('trim', explode(',', (string) env('BANKS_WEBHOOK_ROUTES', 'inter'))))),
+        'prefix' => env('BANKS_WEBHOOK_PREFIX', 'api/webhooks/banks'),
+        'middleware' => ['api'],
+        'base_url' => env('BANKS_WEBHOOK_BASE_URL'),
+        'inter' => [
+            'client_verify_header' => env('BANKS_WEBHOOK_INTER_CLIENT_VERIFY_HEADER', 'X-SSL-Client-Verify'),
+        ],
+    ],
 ];

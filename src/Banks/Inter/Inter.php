@@ -14,6 +14,7 @@ use SistemAtc\Banks\Banks\Inter\Endpoints\Banking\PixPagamentoMethods;
 use SistemAtc\Banks\Banks\Inter\Endpoints\Cobranca\Cobranca;
 use SistemAtc\Banks\Banks\Inter\Endpoints\Pix\RecebimentosPix;
 use SistemAtc\Banks\Banks\Inter\Support\OAuth;
+use SistemAtc\Banks\Banks\Inter\Webhooks\InterWebhooks;
 use SistemAtc\Banks\Support\AuthToken;
 
 /**
@@ -25,6 +26,7 @@ use SistemAtc\Banks\Support\AuthToken;
  *   Inter::make()->banking($i)          extrato, saldo, pagamentos, Pix de saída, webhooks
  *   Inter::make()->cobranca($i)         boleto com Pix (Cobrança v3)
  *   Inter::make()->recebimentosPix($i)  cob, cobv, lote, location, Pix recebido, devolução
+ *   Inter::make()->webhooks($i)         cadastro dos avisos de todas as APIs, na rota do SDK
  *
  * Um host por ambiente serve token e APIs; o ambiente vem da integração
  * (isSandbox()). mTLS obrigatório nos dois ambientes.
@@ -88,5 +90,14 @@ final class Inter implements BankConnector
     public function recebimentosPix(BankIntegration $integration): RecebimentosPix
     {
         return new RecebimentosPix($integration);
+    }
+
+    /**
+     * Webhooks de todas as APIs do Inter apontando pra rota que o SDK publica
+     * (ver config banks.webhooks e o evento BankWebhookReceived).
+     */
+    public function webhooks(BankIntegration $integration): InterWebhooks
+    {
+        return new InterWebhooks($integration);
     }
 }

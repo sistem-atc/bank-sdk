@@ -6,6 +6,7 @@ namespace SistemAtc\Banks\Banks\Inter\Support;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use SistemAtc\Banks\Banks\Inter\Enums\Escopo;
 use SistemAtc\Banks\Contracts\BankIntegration;
 use SistemAtc\Banks\Exceptions\BankAuthenticationException;
 use SistemAtc\Banks\Support\AuthToken;
@@ -68,8 +69,8 @@ final class OAuth
     }
 
     /**
-     * Escopos do token: `settings['scopes']` da integração (lista ou string
-     * separada por espaço) ou, sem ela, `config('banks.inter.scopes')`. O Inter
+     * Escopos do token: `settings['scopes']` da integração (lista de strings ou
+     * de Escopo, ou string separada por espaço) ou, sem ela, `config('banks.inter.scopes')`. O Inter
      * recusa escopo que não foi marcado na aplicação, então o host deve
      * informar só os que o app da empresa tem.
      *
@@ -83,7 +84,12 @@ final class OAuth
             $scopes = preg_split('/[\s,]+/', $scopes) ?: [];
         }
 
-        return array_values(array_unique(array_filter(array_map('strval', (array) $scopes))));
+        $scopes = array_map(
+            fn ($scope) => $scope instanceof Escopo ? $scope->value : (string) $scope,
+            (array) $scopes,
+        );
+
+        return array_values(array_unique(array_filter($scopes)));
     }
 
     public static function tokenUrl(BankIntegration $integration): string
