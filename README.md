@@ -229,9 +229,26 @@ responde 500 e o banco reenvia (o Inter tenta 4 vezes); sem listener a rota
 responde 503, nunca 200.
 
 **Autenticação do Inter**: o Inter chama a URL com certificado de cliente
-assinado pela CA dele (`ca.crt` do "Certificado Webhook" no Internet Banking).
-Quem confere é o servidor web que termina o TLS, e ele repassa o resultado no
-cabeçalho `X-SSL-Client-Verify`. Sem `SUCCESS` a rota responde 401. No nginx:
+assinado pela CA dele. Quem confere é o servidor web que termina o TLS, e ele
+repassa o resultado no cabeçalho `X-SSL-Client-Verify`. Sem `SUCCESS` a rota
+responde 401.
+
+A CA vem **dentro do pacote** (`resources/certs/inter-webhook-ca.crt`, o
+`ca.crt` do "Certificado Webhook" do Internet Banking PJ). Ela é pública e a
+mesma para todo correntista: um servidor configurado atende todas as contas
+Inter, e integração nova não pede nada no nginx. O comando abaixo imprime o
+passo a passo de uma instalação do zero (CA, trecho do nginx, conferência),
+com o vencimento de cada certificado:
+
+```bash
+php artisan banks:webhooks-nginx inter --upstream=http://127.0.0.1:8081
+
+# só o PEM, para instalar (nginx local ou em outra máquina):
+php artisan banks:webhooks-nginx inter --ca | sudo tee /etc/nginx/certs/inter-webhook-ca.crt >/dev/null
+php artisan banks:webhooks-nginx inter --ca | ssh proxy 'sudo tee /etc/nginx/certs/inter-webhook-ca.crt >/dev/null'
+```
+
+O trecho que ele gera, no `server { listen 443 ssl; }` do domínio:
 
 ```nginx
 ssl_client_certificate /etc/nginx/certs/inter-webhook-ca.crt;
@@ -249,6 +266,10 @@ location / {
 }
 ```
 
+Quando o Inter trocar a CA (a intermediária atual vence em 08/02/2029), sai
+versão nova do pacote com o certificado novo; no servidor, reinstale com
+`--ca` e recarregue o nginx.
+
 | Config (`banks.webhooks`) | Env | Padrão |
 |---|---|---|
 | `routes` | `BANKS_WEBHOOK_ROUTES` | `inter` |
@@ -257,7 +278,9 @@ location / {
 | `inter.client_verify_header` | `BANKS_WEBHOOK_INTER_CLIENT_VERIFY_HEADER` | `X-SSL-Client-Verify` (vazio desliga) |
 
 Itaú e Bradesco entram no mesmo mecanismo com um `WebhookReceiver` próprio
-quando o recebimento deles for implementado. A PagBrasil continua com o
+(registrado em `WebhookReceivers`) quando o recebimento deles for implementado;
+banco que conferir origem por certificado implementa também
+`RequiresClientCertificate` e ganha o `banks:webhooks-nginx` de graça. A PagBrasil continua com o
 `WebhookVerifier` (a URL dela já está cadastrada no host).
 
 ## PagBrasil

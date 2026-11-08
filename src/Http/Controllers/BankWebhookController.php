@@ -10,8 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Event;
 use SistemAtc\Banks\Webhooks\BankWebhookReceived;
-use SistemAtc\Banks\Webhooks\Receivers\InterWebhookReceiver;
-use SistemAtc\Banks\Webhooks\Receivers\WebhookReceiver;
+use SistemAtc\Banks\Webhooks\Receivers\WebhookReceivers;
 
 /**
  * Recebe os avisos dos bancos na rota que o SDK registra
@@ -33,7 +32,7 @@ final class BankWebhookController extends Controller
         $integration = (string) $route->parameter('integration');
         $tipo = (string) $route->parameter('tipo');
 
-        $receiver = self::receiver($bank);
+        $receiver = WebhookReceivers::for($bank);
 
         if ($receiver === null || ! $receiver->supports($tipo)) {
             return response()->json(['error' => 'Webhook desconhecido'], 404);
@@ -65,13 +64,5 @@ final class BankWebhookController extends Controller
         ));
 
         return response()->json(['ok' => true]);
-    }
-
-    private static function receiver(string $bank): ?WebhookReceiver
-    {
-        return match ($bank) {
-            'inter' => new InterWebhookReceiver(),
-            default => null,
-        };
     }
 }

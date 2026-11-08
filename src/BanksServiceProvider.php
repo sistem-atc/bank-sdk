@@ -6,6 +6,7 @@ namespace SistemAtc\Banks;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use SistemAtc\Banks\Console\WebhooksNginxCommand;
 use SistemAtc\Banks\Http\Controllers\BankWebhookController;
 
 class BanksServiceProvider extends ServiceProvider
@@ -25,6 +26,8 @@ class BanksServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/banks.php' => config_path('banks.php'),
             ], 'banks-config');
+
+            $this->commands([WebhooksNginxCommand::class]);
         }
     }
 
