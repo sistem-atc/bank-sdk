@@ -473,3 +473,30 @@ it('todos os DTOs do Inter hidratam vazio e fazem ida e volta em camelCase', fun
     expect($cob->toArray())->toMatchArray(['txid' => 't', 'pixCopiaECola' => 'x', 'infoAdicionais' => [['nome' => 'a', 'valor' => 'b']]])
         ->not->toHaveKey('pix_copia_e_cola');
 });
+
+// ─── Retry: 5xx só repete o que não duplica efeito ──────────────────────
+
+it('boleto com 503 NÃO é repetido: o banco pode ter pago e caído na resposta', function () {
+    Http::fake(['*/banking/v2/pagamento' => Http::response(['title' => 'Erro interno'], 503)]);
+
+    expect(fn () => Inter::make()->banking(inter())->pagamentos()->pagarBoleto([
+        'codBarraLinhaDigitavel' => '37690001040010531540201021859366116330000013409',
+        'valorPagar' => '134.09',
+        'dataVencimento' => '2026-11-18',
+    ]))->toThrow(BankRequestException::class);
+
+    Http::assertSentCount(1);
+});
+
+it('Pix com 503 é repetido: a chave de idempotência garante uma ordem só', function () {
+    Http::fake(['*/banking/v2/pix' => Http::sequence()
+        ->push(['title' => 'Erro interno'], 503)
+        ->push(['tipoRetorno' => 'PROCESSADO', 'codigoSolicitacao' => 'PIX-1'])]);
+
+    $r = Inter::make()->banking(inter())->pix()->pagar([
+        'identificador' => 'bordero1-movimento1-t1', 'valor' => 10, 'chave' => '+5511961125777',
+    ]);
+
+    expect($r->codigoSolicitacao)->toBe('PIX-1');
+    Http::assertSentCount(2);
+});

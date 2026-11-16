@@ -47,7 +47,14 @@ abstract class BaseMethods
         $response = $this->executeRequest($method, $apiPath, $query, $body, $headers);
 
         // Throttle / indisponibilidade transitória: backoff exponencial.
-        if (($response->status() === 429 || $response->status() >= 500) && $retryAttempt < 3) {
+        //
+        // 429 o banco recusou antes de processar: repetir é sempre seguro. 5xx
+        // NÃO: o banco pode ter executado e caído na resposta. Só repete o que
+        // não duplica efeito — leitura, ou POST com `x-id-idempotente` (Pix).
+        // O pagamento de boleto/DARF não tem chave de idempotência, e repetir
+        // um 503 ali era pagar a mesma conta até 4× (16/11/2026).
+        if (($response->status() === 429 || ($response->status() >= 500 && self::podeRepetir($method, $headers)))
+            && $retryAttempt < 3) {
             sleep((int) ($response->header('Retry-After') ?: 2 ** ($retryAttempt + 1)));
 
             return $this->makeRequest($method, $apiPath, $query, $body, $headers, $retryAttempt + 1);
@@ -78,6 +85,16 @@ abstract class BaseMethods
      * @param  array<string, mixed>  $body
      * @param  array<string, string>  $headers
      */
+    /** Repetir a chamada não duplica efeito no banco? */
+    private static function podeRepetir(HttpMethod $method, array $headers): bool
+    {
+        if ($method === HttpMethod::GET) {
+            return true;
+        }
+
+        return array_key_exists('x-id-idempotente', array_change_key_case($headers, CASE_LOWER));
+    }
+
     protected function executeRequest(HttpMethod $method, string $apiPath, array $query, array $body, array $headers): Response
     {
         $client = $headers === [] ? $this->httpClient : $this->httpClient->withHeaders($headers);
