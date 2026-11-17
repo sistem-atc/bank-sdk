@@ -12,6 +12,7 @@ final class WebhookReceivers
         return match ($bank) {
             'asaas' => new AsaasWebhookReceiver(),
             'inter' => new InterWebhookReceiver(),
+            'itau' => new ItauWebhookReceiver(),
             default => null,
         };
     }

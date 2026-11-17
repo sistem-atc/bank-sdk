@@ -47,7 +47,7 @@ final class CobrancaImediataMethods extends BaseMethods
 
     /**
      * Altera ou cancela uma cobrança imediata (PATCH /cob/{txid}). Para cancelar,
-     * envie `status = REMOVIDO_PELO_USUARIO_RECEBEDOR`.
+     * envie `status = REMOVIDA_PELO_USUARIO_RECEBEDOR` (grafia do Bacen).
      *
      * @param array<string, mixed> $dados
      */

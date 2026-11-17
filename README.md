@@ -229,6 +229,23 @@ listener **síncrono** que grava o payload: se ele lançar exceção a rota
 responde 500 e o banco reenvia (o Inter tenta 4 vezes); sem listener a rota
 responde 503, nunca 200.
 
+**Itaú (Pix recebido)**: cadastro por chave Pix, apontando para a rota do SDK:
+
+```php
+$url = WebhookUrl::for('itau', $integration, 'pix');   // .../itau/42/pix
+Itau::make()->recebimentosPix($integration)->webhook()->cadastrar($chave, ['webhookUrl' => $url]);
+```
+
+O Itaú acrescenta `/pix` ao chamar (a rota absorve no sufixo) e manda
+`{"pix": [{endToEndId, txid, valor, horario}]}` para **todo** Pix recebido na
+chave: o host filtra pelo txid o que é seu. Autenticação por mTLS, igual ao
+Inter (`banks:webhooks-nginx itau --ca-path=<cadeia do Itaú>`).
+
+> Inter e Itaú no mesmo `server {}`: o `ssl_client_certificate` é um arquivo
+> só, então as duas CAs vão concatenadas — e um certificado válido de um banco
+> passaria na rota do outro. Em cada `location`, confira também o emissor
+> (`$ssl_client_i_dn`), não só `$ssl_client_verify`.
+
 **Autenticação do Inter**: o Inter chama a URL com certificado de cliente
 assinado pela CA dele. Quem confere é o servidor web que termina o TLS, e ele
 repassa o resultado no cabeçalho `X-SSL-Client-Verify`. Sem `SUCCESS` a rota

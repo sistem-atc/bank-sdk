@@ -230,12 +230,15 @@ return [
     | ($ssl_client_verify). Só SUCCESS passa. Vazio desliga a conferência.
     */
     'webhooks' => [
-        'routes' => array_values(array_filter(array_map('trim', explode(',', (string) env('BANKS_WEBHOOK_ROUTES', 'inter,asaas'))))),
+        'routes' => array_values(array_filter(array_map('trim', explode(',', (string) env('BANKS_WEBHOOK_ROUTES', 'inter,asaas,itau'))))),
         'prefix' => env('BANKS_WEBHOOK_PREFIX', 'api/webhooks/banks'),
         'middleware' => ['api'],
         'base_url' => env('BANKS_WEBHOOK_BASE_URL'),
         'inter' => [
             'client_verify_header' => env('BANKS_WEBHOOK_INTER_CLIENT_VERIFY_HEADER', 'X-SSL-Client-Verify'),
+        ],
+        'itau' => [
+            'client_verify_header' => env('BANKS_WEBHOOK_ITAU_CLIENT_VERIFY_HEADER', 'X-SSL-Client-Verify'),
         ],
     ],
 ];
