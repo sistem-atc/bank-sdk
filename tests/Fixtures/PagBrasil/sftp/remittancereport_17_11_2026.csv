@@ -1,0 +1,5 @@
+﻿"Remittance date";"Report date";"Submission date";"Payment date";"Refund date";"Order number";"Payment method";"Status";"Installments";"Description";"Amount paid in BRL by End Customer";"Amount refunded in BRL to End Customer";"Total payment fees and taxes";"Net amount";"Card Brand"
+"11/17/2026";"11/17/2026";"11/03/2026";"11/03/2026";"";"58320";"C";"PC";"3";"Pedido #58320";"249.90";"0.00";"9.87";"240.03";"Visa"
+"11/17/2026";"11/17/2026";"11/10/2026";"11/10/2026";"";"58411";"X";"PC";"";"Pedido #58411";"129.90";"0.00";"1.30";"128.60";""
+"11/17/2026";"11/17/2026";"10/20/2026";"10/20/2026";"11/12/2026";"57990";"C";"RP";"1";"Pedido #57990";"0.00";"89.90";"3.00";"-92.90";"Mastercard"
+

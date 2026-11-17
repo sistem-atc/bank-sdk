@@ -6,6 +6,7 @@ namespace SistemAtc\Banks\Gateways\PagBrasil\Support;
 
 use SistemAtc\Banks\Contracts\BankIntegration;
 use SistemAtc\Banks\Contracts\PagBrasilIntegration;
+use SistemAtc\Banks\Contracts\PagBrasilSftpIntegration;
 use SistemAtc\Banks\Exceptions\BankAuthenticationException;
 
 /**
@@ -45,5 +46,34 @@ final class Credentials
         $key = $integration->getSignatureKey();
 
         return $key === null || trim($key) === '' ? null : $key;
+    }
+
+    /**
+     * Credenciais do SFTP de relatórios: usuário e senha próprios (ticket de
+     * ativação), independentes do pbtoken. Não exige a API ativa — a conta
+     * pode ter só o SFTP.
+     */
+    public static function sftp(BankIntegration $integration): PagBrasilSftpIntegration
+    {
+        if (! $integration instanceof PagBrasilSftpIntegration) {
+            throw new BankAuthenticationException(
+                'PagBrasil: a integração precisa implementar '.PagBrasilSftpIntegration::class
+                .' (usuário e senha do SFTP de relatórios).',
+                bank: 'pagbrasil',
+            );
+        }
+
+        if (! $integration->isIntegrationActive()) {
+            throw new BankAuthenticationException('Integração PagBrasil inativa.', bank: 'pagbrasil');
+        }
+
+        if (trim($integration->getSftpUsername()) === '' || $integration->getSftpPassword() === '') {
+            throw new BankAuthenticationException(
+                'PagBrasil: usuário e senha do SFTP são obrigatórios para baixar relatórios.',
+                bank: 'pagbrasil',
+            );
+        }
+
+        return $integration;
     }
 }

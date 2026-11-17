@@ -10,8 +10,8 @@ Cobre Open Banking (OAuth2 client_credentials + mTLS), consulta de extrato,
 cobrança (boleto e Pix), recebimentos Pix (arranjo regulatório Bacen),
 pagamentos (SISPAG) e CNAB 240/400. Da PagBrasil, cobre a API inteira:
 pedidos (cartão, Débito Flash, boleto, Pix), Link de Pagamento, Pix
-Automático, Payout, assinaturas PagStream, IPN/webhooks e o relatório de
-liquidação. Do Asaas, cobra a API v3 inteira (32 grupos de métodos, vindos do
+Automático, Payout, assinaturas PagStream, IPN/webhooks, o relatório de
+liquidação e os relatórios via SFTP (Conciliação, Vendas diárias, Remessa). Do Asaas, cobra a API v3 inteira (32 grupos de métodos, vindos do
 `sistem_atc/asaas-laravel`).
 
 ## Instalação
@@ -396,7 +396,35 @@ return response(WebhookVerifier::acknowledgement()); // "Received successfully �
 
 // Liquidação (CSV do Dashboard; não há API) — taxas por transação
 $linhas = SettlementReport::parse(file_get_contents($csv));
+
+// Relatórios via SFTP (sfiles.pagbrasil.com:22, /reports/) — a integração
+// implementa também Contracts\PagBrasilSftpIntegration (usuário/senha do SFTP)
+$relatorios = PagBrasil::make()->relatorios($i);
+foreach ($relatorios->listar(ReportType::Remittance, desde: new DateTimeImmutable('-7 days')) as $arquivo) {
+    $csv = $relatorios->baixar($arquivo);                 // guarde o cru
+    $linhas = ReportMethods::ler($arquivo->type, $csv);   // list<RemittanceEntry>
+}
 ```
+
+### Relatórios via SFTP
+
+Do "Guia de relatórios via SFTP — Nacional" v1.0 (out/2026). CSV com `;`,
+UTF-8, decimal com ponto, datas `MM/DD/YYYY` no conteúdo e `DD_MM_YYYY` no
+nome. Três janelas por dia (10–12h, 14–16h, 18–20h, Brasília), redundantes:
+um arquivo pode ser **regerado com o mesmo nome** — compare `size` e
+`modifiedAt` antes de descartar. Sem transação no período, não há arquivo.
+
+| `ReportType` | Arquivo | Leitor → DTO |
+|---|---|---|
+| `Reconciliation` | `report_DD_MM_YYYY.csv` | `SettlementReport` → `SettlementEntry` (mesmo layout da liquidação do Dashboard) |
+| `DailySales` | `dailyreport_DD_MM_YYYY.csv` | `DailySalesReport` → `DailySalesEntry` (NSU, TID, autorização) |
+| `Remittance` | `remittancereport_DD_MM_YYYY.csv` | `RemittanceReport` → `RemittanceEntry` (transações de cada repasse, `netAmount`) |
+
+Chave do servidor: preencha `getSftpHostFingerprint()` ("SHA256:…") e o SDK
+recusa servidor diferente antes de mandar a senha;
+`PhpseclibSftpTransport::serverFingerprint()` mostra a impressão no primeiro
+acesso. Transporte é `Reports\SftpTransport` — troque por um em memória nos
+testes (`relatorios($i, $transport)`). Requer `phpseclib/phpseclib` 3 ou 4.
 
 | Produto | Rotas |
 |---|---|

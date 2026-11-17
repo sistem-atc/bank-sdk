@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SistemAtc\Banks\Tests\Fakes;
 
 use SistemAtc\Banks\Contracts\PagBrasilIntegration;
+use SistemAtc\Banks\Contracts\PagBrasilSftpIntegration;
 use SistemAtc\Banks\Support\ClientCertificate;
 
 /**
@@ -12,7 +13,7 @@ use SistemAtc\Banks\Support\ClientCertificate;
  * dos exemplos da documentação da PagBrasil, pra os testes reproduzirem as
  * assinaturas publicadas.
  */
-final class FakePagBrasilIntegration implements PagBrasilIntegration
+final class FakePagBrasilIntegration implements PagBrasilIntegration, PagBrasilSftpIntegration
 {
     public const DOC_KEY = '36d5f7184574caf84f5b48530ac0d690';
 
@@ -28,7 +29,35 @@ final class FakePagBrasilIntegration implements PagBrasilIntegration
         private readonly bool $active = true,
         private readonly string $clientId = 'cli',
         private readonly string $clientSecret = 'sec',
+        private readonly string $sftpUsername = 'sftp-user',
+        private readonly string $sftpPassword = 'sftp-pass',
+        private readonly ?string $sftpFingerprint = null,
     ) {}
+
+    public function getSftpHost(): string
+    {
+        return '';
+    }
+
+    public function getSftpPort(): int
+    {
+        return 0;
+    }
+
+    public function getSftpUsername(): string
+    {
+        return $this->sftpUsername;
+    }
+
+    public function getSftpPassword(): string
+    {
+        return $this->sftpPassword;
+    }
+
+    public function getSftpHostFingerprint(): ?string
+    {
+        return $this->sftpFingerprint;
+    }
 
     public function getPbToken(): string
     {

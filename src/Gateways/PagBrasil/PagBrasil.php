@@ -11,6 +11,9 @@ use SistemAtc\Banks\Gateways\PagBrasil\Endpoints\Orders\OrderMethods;
 use SistemAtc\Banks\Gateways\PagBrasil\Endpoints\PagStream\PagStream;
 use SistemAtc\Banks\Gateways\PagBrasil\Endpoints\Payout\PayoutMethods;
 use SistemAtc\Banks\Gateways\PagBrasil\Endpoints\PixAutomatico\PixAutomaticoMethods;
+use SistemAtc\Banks\Gateways\PagBrasil\Reports\PhpseclibSftpTransport;
+use SistemAtc\Banks\Gateways\PagBrasil\Reports\ReportMethods;
+use SistemAtc\Banks\Gateways\PagBrasil\Reports\SftpTransport;
 use SistemAtc\Banks\Gateways\PagBrasil\Support\Credentials;
 use SistemAtc\Banks\Gateways\PagBrasil\Support\HttpClientFactory;
 use SistemAtc\Banks\Gateways\PagBrasil\Support\OAuth;
@@ -24,8 +27,9 @@ use SistemAtc\Banks\Support\AuthToken;
  *
  * Não é banco: não tem extrato, DDA nem pagamento de saída no molde SISPAG,
  * por isso implementa GatewayConnector e não BankConnector. A liquidação
- * (repasse + taxas por transação) sai só no relatório "Settlement Reports"
- * do Dashboard: a PagBrasil não expõe API pra ele.
+ * (repasse + taxas por transação) não tem API: sai no relatório
+ * "Settlement Reports" do Dashboard e, desde out/2026, nos relatórios do SFTP
+ * (Conciliação, Vendas diárias e Remessa) — ver relatorios().
  *
  * A integração precisa implementar PagBrasilIntegration (pbtoken, secret
  * phrase e signature key).
@@ -82,6 +86,17 @@ final class PagBrasil implements GatewayConnector
     public function pagStream(BankIntegration $integration): PagStream
     {
         return new PagStream(Credentials::of($integration));
+    }
+
+    /**
+     * Relatórios via SFTP (sfiles.pagbrasil.com, /reports/): Conciliação,
+     * Vendas diárias e Remessa. A integração implementa
+     * PagBrasilSftpIntegration (usuário e senha do SFTP). `$transport` troca o
+     * SFTP real por outro (testes, proxy).
+     */
+    public function relatorios(BankIntegration $integration, ?SftpTransport $transport = null): ReportMethods
+    {
+        return new ReportMethods($transport ?? new PhpseclibSftpTransport(Credentials::sftp($integration)));
     }
 
     /** Autenticação e leitura de IPNs/webhooks recebidos da PagBrasil. */

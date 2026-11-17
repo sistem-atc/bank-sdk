@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace SistemAtc\Banks\Gateways\PagBrasil\Reconciliation;
 
 use DateTimeImmutable;
-use InvalidArgumentException;
 use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Reconciliation\SettlementEntry;
 
 /**
@@ -26,6 +25,9 @@ use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Reconciliation\SettlementEnt
  *     mantida crua; date() resolve quando dá e devolve null na ambiguidade
  *     irresolúvel só se o valor for inválido nos dois formatos;
  *   - "-" no lugar de nome/e-mail/documento em lançamentos da PagBrasil → null.
+ *
+ * O mesmo layout chega pelo SFTP como `report_DD_MM_YYYY.csv` (Conciliação —
+ * cabeçalho "Processing fee in BRL"): este leitor serve aos dois.
  */
 final class SettlementReport
 {
@@ -68,62 +70,21 @@ final class SettlementReport
      */
     public static function parse(string $csv): array
     {
-        if (! mb_check_encoding($csv, 'UTF-8')) {
-            $csv = mb_convert_encoding($csv, 'UTF-8', 'ISO-8859-1');
-        }
+        $rows = ReportCsv::rows($csv, self::COLUMNS, self::MONEY, self::DASH_IS_NULL, 'order', 'Settlement Report');
 
-        $csv = preg_replace('/^\xEF\xBB\xBF/', '', $csv) ?? $csv; // BOM
-
-        $handle = fopen('php://temp', 'r+');
-        fwrite($handle, $csv);
-        rewind($handle);
-
-        $header = fgetcsv($handle, null, ';', '"', '');
-
-        if (! is_array($header)) {
-            fclose($handle);
-
-            return [];
-        }
-
-        $fields = array_map(fn ($name) => self::COLUMNS[strtolower(trim((string) $name))] ?? null, $header);
-
-        if (! in_array('order', $fields, true)) {
-            fclose($handle);
-
-            throw new InvalidArgumentException('PagBrasil: CSV sem a coluna "Order number" — não é um Settlement Report.');
-        }
-
-        $entries = [];
-
-        while (($row = fgetcsv($handle, null, ';', '"', '')) !== false) {
-            if ($row === [null] || $row === ['']) {
-                continue; // linha em branco
-            }
-
-            $data = [];
-            foreach ($fields as $i => $field) {
-                if ($field !== null) {
-                    $data[$field] = self::clean($field, $row[$i] ?? null);
-                }
-            }
-
-            $entries[] = SettlementEntry::fromArray($data);
-        }
-
-        fclose($handle);
-
-        return $entries;
+        return array_map(fn (array $data) => SettlementEntry::fromArray($data), $rows);
     }
 
     /**
      * Data do relatório: tenta MM/DD/YYYY (padrão da PagBrasil) e, se o
      * "mês" passar de 12, DD/MM/YYYY. Datas com dia e mês ≤ 12 ficam no
      * padrão MM/DD — a ambiguidade não tem como ser resolvida pelo arquivo.
+     * Aceita dia/mês com um dígito e hora no fim ("11/7/2026 10:22:00"),
+     * que é descartada.
      */
     public static function date(?string $value): ?DateTimeImmutable
     {
-        if ($value === null || ! preg_match('#^(\d{2})/(\d{2})/(\d{4})$#', trim($value), $m)) {
+        if ($value === null || ! preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})(?:[ T].*)?$#', trim($value), $m)) {
             return null;
         }
 
@@ -138,34 +99,5 @@ final class SettlementReport
         }
 
         return null;
-    }
-
-    private static function clean(string $field, ?string $value): ?string
-    {
-        $value = $value === null ? null : trim($value);
-
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        if ($value === '-' && in_array($field, self::DASH_IS_NULL, true)) {
-            return null;
-        }
-
-        if (in_array($field, self::MONEY, true)) {
-            return self::money($value);
-        }
-
-        return $value;
-    }
-
-    /** "77,09" / "1.234,56" / "8885.00" → "77.09" / "1234.56" / "8885.00". */
-    private static function money(string $value): string
-    {
-        if (str_contains($value, ',')) {
-            $value = str_replace(['.', ','], ['', '.'], $value);
-        }
-
-        return $value;
     }
 }
