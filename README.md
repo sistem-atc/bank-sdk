@@ -408,17 +408,19 @@ foreach ($relatorios->listar(ReportType::Remittance, desde: new DateTimeImmutabl
 
 ### Relatórios via SFTP
 
-Do "Guia de relatórios via SFTP — Nacional" v1.0 (out/2026). CSV com `;`,
-UTF-8, decimal com ponto, datas `MM/DD/YYYY` no conteúdo e `DD_MM_YYYY` no
-nome. Três janelas por dia (10–12h, 14–16h, 18–20h, Brasília), redundantes:
+Do "Guia de relatórios via SFTP — Nacional" v1.0 (out/2026), corrigido pelo
+servidor real: o nome é `{tipo}{conta}_DD-MM-YYYY.csv` (ex.:
+`remittancereport1898_28-10-2026.csv`), a Remessa vem com data ISO e decimal
+com vírgula; Conciliação e Vendas diárias seguem o guia (`MM/DD/YYYY`,
+decimal com ponto). CSV com `;` e UTF-8 em todos. Três janelas por dia (10–12h, 14–16h, 18–20h, Brasília), redundantes:
 um arquivo pode ser **regerado com o mesmo nome** — compare `size` e
 `modifiedAt` antes de descartar. Sem transação no período, não há arquivo.
 
 | `ReportType` | Arquivo | Leitor → DTO |
 |---|---|---|
-| `Reconciliation` | `report_DD_MM_YYYY.csv` | `SettlementReport` → `SettlementEntry` (mesmo layout da liquidação do Dashboard) |
-| `DailySales` | `dailyreport_DD_MM_YYYY.csv` | `DailySalesReport` → `DailySalesEntry` (NSU, TID, autorização) |
-| `Remittance` | `remittancereport_DD_MM_YYYY.csv` | `RemittanceReport` → `RemittanceEntry` (transações de cada repasse, `netAmount`) |
+| `Reconciliation` | `report{conta}_DD-MM-YYYY.csv` | `SettlementReport` → `SettlementEntry` (mesmo layout da liquidação do Dashboard) |
+| `DailySales` | `dailyreport{conta}_DD-MM-YYYY.csv` | `DailySalesReport` → `DailySalesEntry` (NSU, TID, autorização) |
+| `Remittance` | `remittancereport{conta}_DD-MM-YYYY.csv` | `RemittanceReport` → `RemittanceEntry` (transações de cada repasse, `netAmount`) |
 
 Chave do servidor: preencha `getSftpHostFingerprint()` ("SHA256:…") e o SDK
 recusa servidor diferente antes de mandar a senha;

@@ -1,0 +1,3 @@
+﻿Remittance date;Report date;Submission date;Payment date;Refund date;Order number;Payment method;Status;Installments;Description;Amount paid in BRL by End Customer;Amount refunded in BRL to End Customer;Total payment fees and taxes;Net amount;Card Brand
+2026-10-28;2026-10-23;2026-08-23;2026-08-23;;ac4a86e9e7d07fad;C;PC;3;"Creatina Monohidratada 100% Pura - 1Kg (Qty:3)";410,90;0,00;13,23;397,67;Mastercard
+2026-10-28;2026-10-23;2026-08-23;2026-08-23;;785872c0646168fb;C;PC;3;"Creatina Monohidratada 100% Pura - 1Kg (Qty:1)";75,35;0,00;2,83;72,52;Visa

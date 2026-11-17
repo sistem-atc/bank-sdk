@@ -14,7 +14,7 @@ use SistemAtc\Banks\Gateways\PagBrasil\Reconciliation\SettlementReport;
 
 /**
  * Uma linha do relatório de Vendas diárias do SFTP
- * (`dailyreport_DD_MM_YYYY.csv`): a venda com os dados da adquirente (NSU,
+ * (`dailyreport{conta}_DD-MM-YYYY.csv`): a venda com os dados da adquirente (NSU,
  * TID, autorização, bandeira). É o que concilia a venda com o extrato da
  * adquirente; o dinheiro do repasse está na Remessa.
  *

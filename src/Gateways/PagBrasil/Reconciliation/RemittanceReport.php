@@ -7,14 +7,16 @@ namespace SistemAtc\Banks\Gateways\PagBrasil\Reconciliation;
 use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Reconciliation\RemittanceEntry;
 
 /**
- * Leitor do relatório de Remessa do SFTP (`remittancereport_DD_MM_YYYY.csv`):
+ * Leitor do relatório de Remessa do SFTP (`remittancereport{conta}_DD-MM-YYYY.csv`):
  * as transações de cada repasse, com o valor líquido.
  *
  *   $linhas = RemittanceReport::parse($csv);   // list<RemittanceEntry>
  *
  * Layout do "Guia de relatórios via SFTP — Nacional" v1.0 (out/2026): 15
- * colunas, `;`, UTF-8, decimal com ponto, datas MM/DD/YYYY. Colunas
- * localizadas pelo nome do cabeçalho.
+ * colunas, `;`, UTF-8. O arquivo REAL (conferido em 17/11/2026) difere do
+ * guia: datas ISO ("2026-10-28") e decimal com VÍRGULA ("410,90"), com BOM —
+ * o leitor aceita os dois formatos. Colunas localizadas pelo nome do
+ * cabeçalho.
  */
 final class RemittanceReport
 {

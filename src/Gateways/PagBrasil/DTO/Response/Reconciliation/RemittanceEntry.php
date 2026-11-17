@@ -14,7 +14,7 @@ use SistemAtc\Banks\Gateways\PagBrasil\Reconciliation\SettlementReport;
 
 /**
  * Uma linha do relatório de Remessa do SFTP
- * (`remittancereport_DD_MM_YYYY.csv`): uma transação dentro de um REPASSE da
+ * (`remittancereport{conta}_DD-MM-YYYY.csv`): uma transação dentro de um REPASSE da
  * PagBrasil, com o valor líquido. `remittanceDate` é o dia em que o repasse
  * foi disponibilizado — é por ela que as linhas se agrupam num repasse.
  *

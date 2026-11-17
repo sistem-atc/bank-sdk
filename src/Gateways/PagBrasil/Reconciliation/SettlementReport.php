@@ -80,10 +80,18 @@ final class SettlementReport
      * "mês" passar de 12, DD/MM/YYYY. Datas com dia e mês ≤ 12 ficam no
      * padrão MM/DD — a ambiguidade não tem como ser resolvida pelo arquivo.
      * Aceita dia/mês com um dígito e hora no fim ("11/7/2026 10:22:00"),
-     * que é descartada.
+     * que é descartada, e ISO ("2026-10-28", formato real da Remessa).
      */
     public static function date(?string $value): ?DateTimeImmutable
     {
+        // ISO (YYYY-MM-DD[ hh:mm:ss]) — a Remessa do SFTP vem assim, apesar
+        // do guia dizer MM/DD/YYYY.
+        if ($value !== null && preg_match('#^(\d{4})-(\d{2})-(\d{2})(?:[ T].*)?$#', trim($value), $iso)) {
+            return checkdate((int) $iso[2], (int) $iso[3], (int) $iso[1])
+                ? new DateTimeImmutable(sprintf('%04d-%02d-%02d', $iso[1], $iso[2], $iso[3]))
+                : null;
+        }
+
         if ($value === null || ! preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})(?:[ T].*)?$#', trim($value), $m)) {
             return null;
         }

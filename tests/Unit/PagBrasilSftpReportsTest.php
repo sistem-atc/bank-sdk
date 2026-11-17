@@ -170,3 +170,38 @@ it('calcula a impressão SHA256 da chave do servidor no formato do OpenSSH', fun
         ->toBe('SHA256:'.rtrim(base64_encode(hash('sha256', $blob, true)), '='))
         ->and(PhpseclibSftpTransport::fingerprintOf('lixo!!'))->toBeNull();
 });
+
+it('aceita o nome REAL do servidor: conta colada ao tipo e data com hífen', function () {
+    [$type, $date, $conta] = ReportType::parseFilename('remittancereport1898_28-10-2026.csv');
+
+    expect($type)->toBe(ReportType::Remittance)
+        ->and($date->format('Y-m-d'))->toBe('2026-10-28')
+        ->and($conta)->toBe('1898')
+        ->and(ReportType::parseFilename('report1898_08-04-2026.csv')[0])->toBe(ReportType::Reconciliation)
+        ->and(ReportType::parseFilename('dailyreport1898_16-11-2026.csv')[0])->toBe(ReportType::DailySales)
+        ->and(ReportType::parseFilename('report_17_11_2026.csv')[2])->toBeNull()
+        ->and(ReportType::parseFilename('report1898_31-02-2026.csv'))->toBeNull();
+
+    $relatorios = PagBrasil::make()->relatorios(new FakePagBrasilIntegration(), new FakeSftpTransport([
+        '/reports/report1898_08-04-2026.csv' => 'x',
+        '/reports/remittancereport1898_28-10-2026.csv' => 'y',
+    ]));
+
+    expect(array_map(fn ($f) => [$f->name, $f->accountCode], $relatorios->listar()))->toBe([
+        ['report1898_08-04-2026.csv', '1898'],
+        ['remittancereport1898_28-10-2026.csv', '1898'],
+    ]);
+});
+
+it('lê a Remessa REAL: data ISO, decimal com vírgula e BOM', function () {
+    $rows = RemittanceReport::parse(pbSftpFixture('remittancereport1898_28-10-2026.csv'));
+
+    expect($rows)->toHaveCount(2)
+        ->and($rows[0]->order)->toBe('ac4a86e9e7d07fad')
+        ->and($rows[0]->date('remittance_date')?->format('Y-m-d'))->toBe('2026-10-28')
+        ->and($rows[0]->date('report_date')?->format('Y-m-d'))->toBe('2026-10-23')
+        ->and($rows[0]->date('payment_date')?->format('Y-m-d'))->toBe('2026-08-23')
+        ->and($rows[0]->amountPaid)->toBe('410.90')
+        ->and($rows[0]->totalFees)->toBe('13.23')
+        ->and($rows[0]->netAmount)->toBe('397.67');
+});

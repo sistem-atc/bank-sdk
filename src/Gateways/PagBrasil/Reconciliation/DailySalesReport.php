@@ -7,7 +7,7 @@ namespace SistemAtc\Banks\Gateways\PagBrasil\Reconciliation;
 use SistemAtc\Banks\Gateways\PagBrasil\DTO\Response\Reconciliation\DailySalesEntry;
 
 /**
- * Leitor do relatório de Vendas diárias do SFTP (`dailyreport_DD_MM_YYYY.csv`):
+ * Leitor do relatório de Vendas diárias do SFTP (`dailyreport{conta}_DD-MM-YYYY.csv`):
  * vendas com os dados da adquirente (NSU, TID, autorização).
  *
  *   $linhas = DailySalesReport::parse($csv);   // list<DailySalesEntry>

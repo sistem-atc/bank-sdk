@@ -9,7 +9,7 @@ use SistemAtc\Banks\Gateways\PagBrasil\Enums\ReportType;
 
 /**
  * Um relatório disponível no SFTP da PagBrasil. `date` é a data do NOME do
- * arquivo (DD_MM_YYYY); `modifiedAt` e `size` vêm do servidor e mudam quando a
+ * arquivo (DD-MM-YYYY); `modifiedAt` e `size` vêm do servidor e mudam quando a
  * PagBrasil regenera o arquivo numa janela seguinte — o host usa os dois pra
  * saber se precisa baixar de novo.
  */
@@ -22,6 +22,8 @@ final class ReportFile
         public readonly DateTimeImmutable $date,
         public readonly ?int $size = null,
         public readonly ?DateTimeImmutable $modifiedAt = null,
+        /** Código da conta PagBrasil no nome ("1898"), quando vem. */
+        public readonly ?string $accountCode = null,
     ) {}
 
     /** @param array{name: string, size: int|null, mtime: int|null} $remote */
@@ -40,6 +42,7 @@ final class ReportFile
             date: $parsed[1],
             size: $remote['size'],
             modifiedAt: $remote['mtime'] !== null ? (new DateTimeImmutable('@'.$remote['mtime'])) : null,
+            accountCode: $parsed[2] ?? null,
         );
     }
 
@@ -53,6 +56,7 @@ final class ReportFile
             'date' => $this->date->format('Y-m-d'),
             'size' => $this->size,
             'modified_at' => $this->modifiedAt?->format(DATE_ATOM),
+            'account_code' => $this->accountCode,
         ];
     }
 }
