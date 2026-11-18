@@ -83,6 +83,19 @@ final class PhpseclibSftpTransport implements SftpTransport
         return $content;
     }
 
+    public function delete(string $path): void
+    {
+        try {
+            $ok = $this->connection()->delete($path, false);
+        } catch (Throwable $e) {
+            throw new PagBrasilSftpException("PagBrasil SFTP: não excluiu {$path}: {$e->getMessage()}", $e);
+        }
+
+        if ($ok !== true) {
+            throw new PagBrasilSftpException("PagBrasil SFTP: não excluiu {$path} (sem permissão ou arquivo inexistente).");
+        }
+    }
+
     public function disconnect(): void
     {
         if ($this->sftp !== null) {

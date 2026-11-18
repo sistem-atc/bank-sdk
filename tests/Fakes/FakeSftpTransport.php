@@ -13,6 +13,9 @@ final class FakeSftpTransport implements SftpTransport
     /** @var list<string> */
     public array $downloaded = [];
 
+    /** @var list<string> */
+    public array $deleted = [];
+
     public bool $disconnected = false;
 
     /**
@@ -44,6 +47,16 @@ final class FakeSftpTransport implements SftpTransport
         $this->downloaded[] = $path;
 
         return $this->files[$path] ?? throw new RuntimeException("not found: {$path}");
+    }
+
+    public function delete(string $path): void
+    {
+        if (! array_key_exists($path, $this->files)) {
+            throw new RuntimeException("not found: {$path}");
+        }
+
+        unset($this->files[$path]);
+        $this->deleted[] = $path;
     }
 
     public function disconnect(): void

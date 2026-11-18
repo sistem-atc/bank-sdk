@@ -403,6 +403,8 @@ $relatorios = PagBrasil::make()->relatorios($i);
 foreach ($relatorios->listar(ReportType::Remittance, desde: new DateTimeImmutable('-7 days')) as $arquivo) {
     $csv = $relatorios->baixar($arquivo);                 // guarde o cru
     $linhas = ReportMethods::ler($arquivo->type, $csv);   // list<RemittanceEntry>
+    // depois que o host gravou e processou o cru:
+    // $relatorios->excluir($arquivo);                    // limpa a pasta do SFTP
 }
 ```
 

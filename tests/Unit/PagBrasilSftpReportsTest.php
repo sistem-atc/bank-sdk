@@ -150,6 +150,18 @@ it('baixa e lê em DTOs', function () {
         ->and($transport->disconnected)->toBeTrue();
 });
 
+it('exclui o arquivo do SFTP pelo ReportFile ou pelo nome', function () {
+    $transport = pbSftpTransport();
+    $relatorios = PagBrasil::make()->relatorios(new FakePagBrasilIntegration(), $transport);
+
+    $relatorios->excluir($relatorios->listar(ReportType::Reconciliation)[0]);
+    $relatorios->excluir('dailyreport_17_11_2026.csv');
+
+    expect($transport->deleted)->toBe(['/reports/report_17_11_2026.csv', '/reports/dailyreport_17_11_2026.csv'])
+        ->and($relatorios->listar(ReportType::Reconciliation))->toBe([])
+        ->and(fn () => $relatorios->excluir('nao_existe.csv'))->toThrow(RuntimeException::class);
+});
+
 it('exige credencial de SFTP', function () {
     expect(fn () => Credentials::sftp(new FakeBankIntegration()))
         ->toThrow(BankAuthenticationException::class, 'PagBrasilSftpIntegration')

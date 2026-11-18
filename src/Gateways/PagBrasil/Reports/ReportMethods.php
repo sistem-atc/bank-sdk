@@ -70,11 +70,23 @@ final class ReportMethods
     /** Conteúdo cru do arquivo (CSV). */
     public function baixar(ReportFile|string $file): string
     {
-        $path = $file instanceof ReportFile
+        return $this->transport->get($this->path($file));
+    }
+
+    /**
+     * Exclui o arquivo do SFTP. Pra limpar a pasta DEPOIS que o host guardou e
+     * processou o conteúdo — o SDK não decide quando; quem chama, sim.
+     */
+    public function excluir(ReportFile|string $file): void
+    {
+        $this->transport->delete($this->path($file));
+    }
+
+    private function path(ReportFile|string $file): string
+    {
+        return $file instanceof ReportFile
             ? $file->path
             : (str_starts_with($file, '/') ? $file : rtrim($this->directory, '/').'/'.$file);
-
-        return $this->transport->get($path);
     }
 
     /**
